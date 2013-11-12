@@ -1,0 +1,7 @@
+/unittest/Win32/Debug/*.exe
+/unittest/Win32/Debug/dcu/*.dcu
+
+/unittest/Win32/Release/*.exe
+
+/unittest/Win32/Release/dcu/*.dcu
+/unittest/Win32/Release/dunit.ini
