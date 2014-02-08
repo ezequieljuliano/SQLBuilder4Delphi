@@ -118,4 +118,22 @@ INSERT
        'Ejm',
        58);
 
+Using SQLBuilder4Delphi
+========================
+
+Using this library will is very simple, you simply add the Search Path of your IDE or your project the following directories:
+
+- SQLBuilder4Delphi\dependencies\Spring4D\Source\Base
+- SQLBuilder4Delphi\dependencies\Spring4D\Source\Base\Collections
+- SQLBuilder4Delphi\dependencies\Spring4D\Source\Base\Reflection
+- SQLBuilder4Delphi\dependencies\Spring4D\Source\Core\Container
+- SQLBuilder4Delphi\dependencies\Spring4D\Source\Core\Services
+- SQLBuilder4Delphi\src\
+
+Then you should add to your DPR a Unit responsible for making the records to be used in Dependency Injection.: 
+
+Add Uses of DPR, preferably at the end of the next row.: 
+
+- SQLBuilder4D.Module.Register
+
 Analyze the unit tests they will assist you.
