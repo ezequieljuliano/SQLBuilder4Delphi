@@ -1,7 +1,7 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <ProjectGuid>{A749B1DA-7A25-4DD2-B4A9-AAFC0DFF12AC}</ProjectGuid>
-        <ProjectVersion>14.4</ProjectVersion>
+        <ProjectVersion>15.1</ProjectVersion>
         <FrameworkType>None</FrameworkType>
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Debug</Config>
@@ -54,7 +54,7 @@
         <Manifest_File>None</Manifest_File>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;$(DCC_Namespace)</DCC_Namespace>
         <VerInfo_Locale>1046</VerInfo_Locale>
-        <DCC_UnitSearchPath>$(BDS)\Source\DUnit\src;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <DCC_UnitSearchPath>$(BDS)\Source\DUnit\src;..\dependencies\Spring4D\Source\Base;..\dependencies\Spring4D\Source\Base\Collections;..\dependencies\Spring4D\Source\Base\Reflection;..\dependencies\Spring4D\Source\Core\Container;..\dependencies\Spring4D\Source\Core\Services;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <DCC_Define>_CONSOLE_TESTRUNNER;$(DCC_Define)</DCC_Define>
         <DCC_DcpOutput>.\$(Platform)\$(Config)\dcp</DCC_DcpOutput>
@@ -74,7 +74,6 @@
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
         <DCC_UsePackage>cxPivotGridChartRS17;JvGlobus;myprovider170;JvMM;dxSkinSevenRS17;dxSkinBlueprintRS17;JvManagedThreads;dxSkinHighContrastRS17;dxSkinOffice2007BlackRS17;dxCoreRS17;dac170;cxPageControldxBarPopupMenuRS17;dxSkinXmas2008BlueRS17;dxPSDBTeeChartRS17;rbADO1417;JvCrypt;dxPSTeeChartRS17;dxSkinSummer2008RS17;dxPScxSchedulerLnkRS17;dxSkinBlueRS17;dxSkinDarkRoomRS17;PkgMsysDatasnap;DBXInterBaseDriver;DataSnapServer;DataSnapCommon;dxPScxTLLnkRS17;PkgMsysUniDAC;JvNet;officeXPrt;JvDotNetCtrls;dxRibbonRS17;DbxCommonDriver;cxDataRS17;vclimg;dxSkinsdxBarPainterRS17;dxPSdxDBTVLnkRS17;dbxcds;DatasnapConnectorsFreePascal;dxSkinMoneyTwinsRS17;JvXPCtrls;vcldb;cxExportRS17;ibprovider170;dxPSCoreRS17;dxBarExtItemsRS17;PkgMsysDBEditors;dxGDIPlusRS17;dxNavBarRS17;CustomIPTransport;cxLibraryRS17;cxGridRS17;dxSkinOffice2010BlackRS17;dsnap;IndyIPServer;ACBr_MDFe;unidac170;IndyCore;PkgMsysACBr;dxSkinMcSkinRS17;CloudService;dxPScxCommonRS17;FmxTeeUI;frxDB17;dxSkinsdxDLPainterRS17;dxSkiniMaginaryRS17;ACBr_NFe2;ACBr_SAT;rbRAP1417;JvDB;JvRuntimeDesign;oraprovider170;dxPScxVGridLnkRS17;JclDeveloperTools;rbDBE1417;unidacfmx170;gaSQLParser;dxSkinSevenClassicRS17;dxPScxExtCommonRS17;rbUSER1417;dxPScxSSLnkRS17;dxSkinLilianRS17;fs17;dxPSdxLCLnkRS17;dxSkinOffice2010BlueRS17;bindcompfmx;dxSkinOffice2010SilverRS17;ACBr_PAF;vcldbx;PkgMsysDataAccess;cxSchedulerGridRS17;dbrtl;bindcomp;inetdb;JvPluginSystem;dxBarRS17;dclRBE1417;DBXOdbcDriver;dxBarDBNavRS17;JvCmp;dxSkinWhiteprintRS17;JvTimeFramework;xmlrtl;dxSkinsdxRibbonPainterRS17;ibxpress;rbIDE1417;rbDB1417;dxDockingRS17;vclactnband;bindengine;soaprtl;FMXTee;dxADOServerModeRS17;ACBrComum;bindcompvcl;rbDIDE1417;dxBarExtDBItemsRS17;Jcl;vclie;dxPSPrVwRibbonRS17;dxSkinOffice2007PinkRS17;synapse;cxPageControlRS17;rbTCUI1417;dxSkinscxPCPainterRS17;ACBr_TEFD;dxmdsRS17;dxSkinTheAsphaltWorldRS17;DBXInformixDriver;Intraweb;dxPsPrVwAdvRS17;dxSkinSilverRS17;dxdborRS17;dsnapcon;DBXFirebirdDriver;PCN2;inet;fsDB17;JvPascalInterpreter;vclx;dxSkinStardustRS17;cxEditorsRS17;DBXSybaseASADriver;rbRIDE1417;crcontrols170;dbexpress;JvBDE;IndyIPClient;ACBr_Convenio115;cxTreeListdxBarPopupMenuRS17;dxSkinVS2010RS17;rbRCL1417;ZComponent;dxThemeRS17;DBXSqliteDriver;ACBrDiversos;ACBrTCP;dxPScxGridLnkRS17;fmx;JvDlgs;IndySystem;TeeDB;dxSkinValentineRS17;vclib;inetdbbde;DataSnapClient;dxSkinDevExpressStyleRS17;dbfprovider170;DataSnapProviderClient;DBXSybaseASEDriver;cxBarEditItemRS17;dxServerModeRS17;cxPivotGridOLAPRS17;cxSchedulerRS17;MetropolisUILiveTile;dxSkinPumpkinRS17;dxPSLnksRS17;dxPSdxDBOCLnkRS17;cxVerticalGridRS17;rbTC1417;dxSkinSpringTimeRS17;vcldsnap;dacvcl170;dxSkinDevExpressDarkStyleRS17;DBXDb2Driver;rbCIDE1417;DBXOracleDriver;dxSkinLiquidSkyRS17;JvCore;db2provider170;vclribbon;ACBr_SPED;cxSpreadSheetRS17;PkgMsysStandard;PkgMsysExpress;fmxase;vcl;msprovider170;dxSkinOffice2007SilverRS17;IndyIPCommon;DBXMSSQLDriver;CodeSiteExpressPkg;dxPSdxOCLnkRS17;dcldxSkinsCoreRS17;ACBr_Boleto;PkgMsysDialogs;ACBr_Sintegra;JvAppFrm;inetdbxpress;webdsnap;rbIBE1417;ACBr_NFSe;ACBr_LFD;rbBDE1417;dxSkinCoffeeRS17;JvDocking;adortl;dxSkinscxSchedulerPainterRS17;dclRBDBE1417;JvWizards;frx17;JvHMI;dxtrmdRS17;PkgMsysSQLParser;dxPScxPCProdRS17;ACBrOpenSSL;JvBands;ACBrCapicom;ACBr_BoletoFC_FR;dclRBIBE1417;ZDbc;rtl;ACBrSerial;DbxClientDriver;rbDBDE1417;dxTabbedMDIRS17;dxSkinSharpPlusRS17;dxComnRS17;odbcprovider170;dxSkinsCoreRS17;dxSkinLondonLiquidSkyRS17;dxdbtrRS17;Tee;JclContainers;liteprovider170;ACBr_CTe;ZPlain;JvSystem;dxorgcRS17;svnui;dxSkinBlackRS17;PkgMsysEditors;JvControls;IndyProtocols;DBXMySQLDriver;dxLayoutControlRS17;bindcompdbx;TeeUI;JvJans;JvPrintPreview;JvPageComps;JvStdCtrls;JvCustom;dxSkinOffice2007BlueRS17;dxPScxPivotGridLnkRS17;PkgMsysJEDI;dxSpellCheckerRS17;ZCore;vcltouch;dxSkinOffice2007GreenRS17;dxSkinSharpRS17;websnap;dclRBBDE1417;dxSkinFoggyRS17;dxTileControlRS17;rbDAD1417;ACBrNFSeDanfseFRpkg;pgprovider170;VclSmp;dxSkinDarkSideRS17;adsprovider170;cxPivotGridRS17;PkgMsysGrids;PkgMsysBars;DataSnapConnectors;ACBrNFeDanfeFRpkg;dacfmx170;fmxobj;cxTreeListRS17;JclVcl;dxPSdxFCLnkRS17;dxSkinGlassOceansRS17;rbUSERDesign1417;unidacvcl170;frxe17;accessprovider170;dclRBADO1417;svn;dxFlowChartRS17;aseprovider170;fmxdae;ZParseSql;dxSkinsdxNavBarPainterRS17;bdertl;ACBrCTeDacteFRpkg;DataSnapIndy10ServerTransport;dxDBXServerModeRS17;dxSkinCaramelRS17;$(DCC_UsePackage)</DCC_UsePackage>
         <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
-        <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win64)'!=''">
@@ -96,7 +95,7 @@
         <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
         <DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
         <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
-        <DCC_DebugInformation>false</DCC_DebugInformation>
+        <DCC_DebugInformation>0</DCC_DebugInformation>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_OSX32)'!=''">
         <Icns_MainIcns>$(BDS)\bin\delphi_PROJECTICNS.icns</Icns_MainIcns>
@@ -162,8 +161,8 @@
                     <VersionInfoKeys Name="CFBundleExecutable"/>
                 </VersionInfoKeys>
                 <Excluded_Packages>
-                    <Excluded_Packages Name="$(BDSBIN)\dcloffice2k170.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
-                    <Excluded_Packages Name="$(BDSBIN)\dclofficexp170.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\dcloffice2k190.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\dclofficexp190.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
                 </Excluded_Packages>
                 <Source>
                     <Source Name="MainSource">SQLBuilder4D.Tests.dpr</Source>

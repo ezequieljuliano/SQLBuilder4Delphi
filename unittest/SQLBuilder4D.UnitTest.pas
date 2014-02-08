@@ -40,6 +40,7 @@ type
     procedure TestSQLDelete();
     procedure TestSQLUpdate();
     procedure TestSQLInsert();
+    procedure TestSQLDateTime();
   end;
 
 implementation
@@ -59,6 +60,71 @@ procedure TTestSQLBuilder4D.TearDown;
 begin
   inherited;
 
+end;
+
+procedure TTestSQLBuilder4D.TestSQLDateTime;
+const
+  cSelectDate =
+    'Select '
+    + sLineBreak +
+    ' *'
+    + sLineBreak +
+    ' From Customers C'
+    + sLineBreak +
+    ' Where (C.C_Date = ''01/01/2014'')';
+
+  cSelectDateTime =
+    'Select '
+    + sLineBreak +
+    ' *'
+    + sLineBreak +
+    ' From Customers C'
+    + sLineBreak +
+    ' Where (C.C_DateTime = ''01/01/2014 01:05:22'')';
+
+  cSelectTime =
+    'Select '
+    + sLineBreak +
+    ' *'
+    + sLineBreak +
+    ' From Customers C'
+    + sLineBreak +
+    ' Where (C.C_Time = ''01:05:22'')';
+var
+  vOut: string;
+  vDate: TDate;
+  vDateTime: TDateTime;
+  vTime: TTime;
+begin
+  vDate := StrToDate('01/01/2014');
+  vOut := TSQLBuilder
+    .Select
+    .AllColumns
+    .From('Customers C')
+    .Where('C.C_Date').Equal(vDate)
+    .ToString;
+
+  CheckEqualsString(cSelectDate, vOut);
+
+  vDateTime := StrToDateTime('01/01/2014 01:05:22');
+  vOut := TSQLBuilder
+    .Select
+    .AllColumns
+    .From('Customers C')
+    .Where('C.C_DateTime').Equal(vDateTime)
+    .ToString;
+
+  CheckEqualsString(cSelectDateTime, vOut);
+
+  vTime := StrToTime('01:05:22');
+  vOut := TSQLBuilder
+    .Select
+    .AllColumns
+    .From('Customers C')
+    .Where('C.C_Time').Equal(vTime)
+    .ToString;
+
+  CheckEqualsString(cSelectTime, vOut);
 end;
 
 procedure TTestSQLBuilder4D.TestSQLDelete;

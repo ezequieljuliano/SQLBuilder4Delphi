@@ -5,3 +5,6 @@
 
 /unittest/Win32/Release/dcu/*.dcu
 /unittest/Win32/Release/dunit.ini
+/src/__history
+/unittest/Win32/Debug/dunit.ini
+/unittest/__history

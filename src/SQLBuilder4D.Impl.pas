@@ -5,7 +5,7 @@
   you may not use this file except in compliance with the License.
   You may obtain a copy of the License at
 
-            http://www.apache.org/licenses/LICENSE-2.0
+  http://www.apache.org/licenses/LICENSE-2.0
 
   Unless required by applicable law or agreed to in writing, software
   distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,7 +26,8 @@ uses
   Spring,
   Spring.Services,
   System.TypInfo,
-  System.StrUtils;
+  System.StrUtils,
+  System.DateUtils;
 
 type
 
@@ -451,6 +452,10 @@ type
 
 implementation
 
+type
+
+  TMsysSQLDateType = (dtDate, dtDateTime, dtTime);
+
 procedure ColumnIsValid(const pColumnName: string);
 begin
   if (pColumnName = EmptyStr) then
@@ -461,9 +466,8 @@ procedure ValidateSQLReservedWord(const pValue: string);
 
   function GetWords(): TArray<string>;
   begin
-    Result := TArray<string>.Create('or', 'and', 'between', 'is', 'not', 'null', 'in', 'like', 'select',
-      'union', 'inner', 'join', 'right', 'full', 'first', 'insert', 'update',
-      'delete');
+    Result := TArray<string>.Create('or', 'and', 'between', 'is', 'not', 'null', 'in', 'like', 'select', 'union', 'inner', 'join', 'right', 'full',
+      'first', 'insert', 'update', 'delete');
   end;
 
 var
@@ -477,6 +481,16 @@ begin
   for I := low(vWords) to high(vWords) do
     if (AnsiCompareText(vValue, vWords[I]) = 0) then
       raise ESQLBuilderException.Create('Value reported for SQL Builder is invalid!');
+end;
+
+function GetSQLDateType(const pDate: TDateTime): TMsysSQLDateType;
+begin
+  if (pDate = DateOf(pDate)) then
+    Result := TMsysSQLDateType.dtDate
+  else if (pDate = TimeOf(pDate)) then
+    Result := TMsysSQLDateType.dtTime
+  else
+    Result := TMsysSQLDateType.dtDateTime;
 end;
 
 function ConvertSQLValue(const pValue: TValue): string;
@@ -495,7 +509,21 @@ begin
       end;
     tkFloat:
       begin
-        Result := AnsiReplaceText(Result, ',', '.');
+        if (pValue.IsType<TDateTime>) then
+        begin
+          case GetSQLDateType(FloatToDateTime(pValue.AsExtended)) of
+            dtDate:
+              Result := QuotedStr(FormatDateTime('ddddd', pValue.AsExtended));
+            dtDateTime:
+              Result := QuotedStr(FormatDateTime('c', pValue.AsExtended));
+            dtTime:
+              Result := QuotedStr(FormatDateTime('tt', pValue.AsExtended))
+          else
+            raise ESQLBuilderException.Create('DateTime is not valid!');
+          end;
+        end
+        else
+          Result := AnsiReplaceText(Result, ',', '.');
       end;
   end;
 end;
@@ -526,9 +554,7 @@ end;
 
 function TSQLOrderBy.Column(const pColumnName: string): ISQLOrderBy;
 begin
-  FCriterias.Add(
-    TSQLCriteria.Create(pColumnName, ctComma)
-    );
+  FCriterias.Add(TSQLCriteria.Create(pColumnName, ctComma));
   Result := Self;
 end;
 
@@ -585,9 +611,7 @@ end;
 procedure TSQLOrderBy.InternalAddUnion(const pUnionSQL: string; const pUnionType: TSQLUnionType);
 begin
   if (FStatementType = stSelect) then
-    FUnions.Add(
-      TSQLUnion.Create(pUnionType, pUnionSQL)
-      );
+    FUnions.Add(TSQLUnion.Create(pUnionType, pUnionSQL));
 end;
 
 function TSQLOrderBy.Sort(const pSortType: TSQLSortType): ISQLOrderBy;
@@ -663,9 +687,7 @@ end;
 
 function TSQLHaving.Aggregate(const pHavingCriteria: string): ISQLHaving;
 begin
-  FCriterias.Add(
-    TSQLCriteria.Create(pHavingCriteria, ctAnd)
-    );
+  FCriterias.Add(TSQLCriteria.Create(pHavingCriteria, ctAnd));
   Result := Self;
 end;
 
@@ -722,9 +744,7 @@ end;
 procedure TSQLHaving.InternalAddUnion(const pUnionSQL: string; const pUnionType: TSQLUnionType);
 begin
   if (FStatementType = stSelect) then
-    FUnions.Add(
-      TSQLUnion.Create(pUnionType, pUnionSQL)
-      );
+    FUnions.Add(TSQLUnion.Create(pUnionType, pUnionSQL));
 end;
 
 function TSQLHaving.OrderBy: ISQLOrderBy;
@@ -818,9 +838,7 @@ end;
 
 function TSQLGroupBy.Column(const pColumnName: string): ISQLGroupBy;
 begin
-  FCriterias.Add(
-    TSQLCriteria.Create(pColumnName, ctComma)
-    );
+  FCriterias.Add(TSQLCriteria.Create(pColumnName, ctComma));
   Result := Self;
 end;
 
@@ -900,9 +918,7 @@ end;
 procedure TSQLGroupBy.InternalAddUnion(const pUnionSQL: string; const pUnionType: TSQLUnionType);
 begin
   if (FStatementType = stSelect) then
-    FUnions.Add(
-      TSQLUnion.Create(pUnionType, pUnionSQL)
-      );
+    FUnions.Add(TSQLUnion.Create(pUnionType, pUnionSQL));
 end;
 
 function TSQLGroupBy.OrderBy: ISQLOrderBy;
@@ -1085,17 +1101,13 @@ end;
 
 function TSQLSelect.Join(const pTableName, pJoinCriteria: string): ISQLSelect;
 begin
-  FJoinedTables.Add(
-    TSQLJoin.Create(pTableName, jtInner, pJoinCriteria)
-    );
+  FJoinedTables.Add(TSQLJoin.Create(pTableName, jtInner, pJoinCriteria));
   Result := Self;
 end;
 
 function TSQLSelect.LeftOuterJoin(const pTableName, pJoinCriteria: string): ISQLSelect;
 begin
-  FJoinedTables.Add(
-    TSQLJoin.Create(pTableName, jtLeftOuter, pJoinCriteria)
-    );
+  FJoinedTables.Add(TSQLJoin.Create(pTableName, jtLeftOuter, pJoinCriteria));
   Result := Self;
 end;
 
@@ -1124,9 +1136,7 @@ end;
 
 function TSQLSelect.RightOuterJoin(const pTableName, pJoinCriteria: string): ISQLSelect;
 begin
-  FJoinedTables.Add(
-    TSQLJoin.Create(pTableName, jtRightOuter, pJoinCriteria)
-    );
+  FJoinedTables.Add(TSQLJoin.Create(pTableName, jtRightOuter, pJoinCriteria));
   Result := Self;
 end;
 
@@ -1167,7 +1177,7 @@ var
 begin
   Result := '';
 
-  if (FColumns.Count < 1) or (FFromTable.Tablename = EmptyStr) then
+  if (FColumns.Count < 1) or (FFromTable.TableName = EmptyStr) then
     Exit;
 
   vStrBuilder := TStringBuilder.Create;
@@ -1223,41 +1233,31 @@ end;
 
 function TSQLSelect.Union(const pGroupBy: ISQLGroupBy; const pType: TSQLUnionType): ISQLSelect;
 begin
-  FUnions.Add(
-    TSQLUnion.Create(pType, pGroupBy.ToString)
-    );
+  FUnions.Add(TSQLUnion.Create(pType, pGroupBy.ToString));
   Result := Self;
 end;
 
 function TSQLSelect.Union(const pSelect: ISQLSelect; const pType: TSQLUnionType): ISQLSelect;
 begin
-  FUnions.Add(
-    TSQLUnion.Create(pType, pSelect.ToString)
-    );
+  FUnions.Add(TSQLUnion.Create(pType, pSelect.ToString));
   Result := Self;
 end;
 
 function TSQLSelect.Union(const pWhere: ISQLWhere; const pType: TSQLUnionType): ISQLSelect;
 begin
-  FUnions.Add(
-    TSQLUnion.Create(pType, pWhere.ToString)
-    );
+  FUnions.Add(TSQLUnion.Create(pType, pWhere.ToString));
   Result := Self;
 end;
 
 function TSQLSelect.Union(const pOrderBy: ISQLOrderBy; const pType: TSQLUnionType): ISQLSelect;
 begin
-  FUnions.Add(
-    TSQLUnion.Create(pType, pOrderBy.ToString)
-    );
+  FUnions.Add(TSQLUnion.Create(pType, pOrderBy.ToString));
   Result := Self;
 end;
 
 function TSQLSelect.Union(const pHaving: ISQLHaving; const pType: TSQLUnionType): ISQLSelect;
 begin
-  FUnions.Add(
-    TSQLUnion.Create(pType, pHaving.ToString)
-    );
+  FUnions.Add(TSQLUnion.Create(pType, pHaving.ToString));
   Result := Self;
 end;
 
@@ -1354,10 +1354,8 @@ function TSQLWhere.Between(const pInitial, pFinal: TValue): ISQLWhere;
 begin
   ColumnIsValid(FColumnName);
 
-  FCriterias.Add(
-    TSQLCriteria.Create('(' + FColumnName + ' Between ' + ConvertSQLValue(pInitial)
-    + ' And ' + ConvertSQLValue(pFinal) + ')', FConnectorType)
-    );
+  FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' Between ' + ConvertSQLValue(pInitial) + ' And ' + ConvertSQLValue(pFinal) + ')',
+    FConnectorType));
 
   FConnectorType := ctAnd;
   FColumnName := EmptyStr;
@@ -1377,9 +1375,7 @@ function TSQLWhere.Criterion(const pOperator: TSQLOperatorType; const pValue: TV
 begin
   ColumnIsValid(FColumnName);
 
-  FCriterias.Add(
-    TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[pOperator] + ' ' + ConvertSQLValue(pValue) + ')', FConnectorType)
-    );
+  FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[pOperator] + ' ' + ConvertSQLValue(pValue) + ')', FConnectorType));
 
   FConnectorType := ctAnd;
   FColumnName := EmptyStr;
@@ -1391,9 +1387,7 @@ begin
   ColumnIsValid(FColumnName);
   ColumnIsValid(pColumnNameValue);
 
-  FCriterias.Add(
-    TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[pOperator] + ' ' + pColumnNameValue + ')', FConnectorType)
-    );
+  FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[pOperator] + ' ' + pColumnNameValue + ')', FConnectorType));
 
   FConnectorType := ctAnd;
   FColumnName := EmptyStr;
@@ -1411,9 +1405,7 @@ function TSQLWhere.Different(const pValue: TValue): ISQLWhere;
 begin
   ColumnIsValid(FColumnName);
 
-  FCriterias.Add(
-    TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[opDifferent] + ' ' + ConvertSQLValue(pValue) + ')', FConnectorType)
-    );
+  FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[opDifferent] + ' ' + ConvertSQLValue(pValue) + ')', FConnectorType));
 
   FConnectorType := ctAnd;
   FColumnName := EmptyStr;
@@ -1424,9 +1416,7 @@ function TSQLWhere.Equal(const pValue: TValue): ISQLWhere;
 begin
   ColumnIsValid(FColumnName);
 
-  FCriterias.Add(
-    TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[opEqual] + ' ' + ConvertSQLValue(pValue) + ')', FConnectorType)
-    );
+  FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[opEqual] + ' ' + ConvertSQLValue(pValue) + ')', FConnectorType));
 
   FConnectorType := ctAnd;
   FColumnName := EmptyStr;
@@ -1442,9 +1432,7 @@ function TSQLWhere.Greater(const pValue: TValue): ISQLWhere;
 begin
   ColumnIsValid(FColumnName);
 
-  FCriterias.Add(
-    TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[opGreater] + ' ' + ConvertSQLValue(pValue) + ')', FConnectorType)
-    );
+  FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[opGreater] + ' ' + ConvertSQLValue(pValue) + ')', FConnectorType));
 
   FConnectorType := ctAnd;
   FColumnName := EmptyStr;
@@ -1455,9 +1443,8 @@ function TSQLWhere.GreaterOrEqual(const pValue: TValue): ISQLWhere;
 begin
   ColumnIsValid(FColumnName);
 
-  FCriterias.Add(
-    TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[opGreaterOrEqual] + ' ' + ConvertSQLValue(pValue) + ')', FConnectorType)
-    );
+  FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[opGreaterOrEqual] + ' ' + ConvertSQLValue(pValue) + ')',
+    FConnectorType));
 
   FConnectorType := ctAnd;
   FColumnName := EmptyStr;
@@ -1529,9 +1516,7 @@ begin
     end;
     vStrBuilder.Append(')');
 
-    FCriterias.Add(
-      TSQLCriteria.Create('(' + FColumnName + ' In ' + vStrBuilder.ToString + ')', FConnectorType)
-      );
+    FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' In ' + vStrBuilder.ToString + ')', FConnectorType));
   finally
     FreeAndNil(vStrBuilder);
   end;
@@ -1544,18 +1529,14 @@ end;
 procedure TSQLWhere.InternalAddUnion(const pUnionSQL: string; const pUnionType: TSQLUnionType);
 begin
   if (FStatementType = stSelect) then
-    FUnions.Add(
-      TSQLUnion.Create(pUnionType, pUnionSQL)
-      );
+    FUnions.Add(TSQLUnion.Create(pUnionType, pUnionSQL));
 end;
 
 function TSQLWhere.IsNotNull: ISQLWhere;
 begin
   ColumnIsValid(FColumnName);
 
-  FCriterias.Add(
-    TSQLCriteria.Create('(' + FColumnName + ' Is Not Null)', FConnectorType)
-    );
+  FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' Is Not Null)', FConnectorType));
 
   FConnectorType := ctAnd;
   FColumnName := EmptyStr;
@@ -1566,9 +1547,7 @@ function TSQLWhere.IsNull: ISQLWhere;
 begin
   ColumnIsValid(FColumnName);
 
-  FCriterias.Add(
-    TSQLCriteria.Create('(' + FColumnName + ' Is Null)', FConnectorType)
-    );
+  FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' Is Null)', FConnectorType));
 
   FConnectorType := ctAnd;
   FColumnName := EmptyStr;
@@ -1579,9 +1558,7 @@ function TSQLWhere.Less(const pValue: TValue): ISQLWhere;
 begin
   ColumnIsValid(FColumnName);
 
-  FCriterias.Add(
-    TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[opLess] + ' ' + ConvertSQLValue(pValue) + ')', FConnectorType)
-    );
+  FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[opLess] + ' ' + ConvertSQLValue(pValue) + ')', FConnectorType));
 
   FConnectorType := ctAnd;
   FColumnName := EmptyStr;
@@ -1592,9 +1569,7 @@ function TSQLWhere.LessOrEqual(const pValue: TValue): ISQLWhere;
 begin
   ColumnIsValid(FColumnName);
 
-  FCriterias.Add(
-    TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[opLessOrEqual] + ' ' + ConvertSQLValue(pValue) + ')', FConnectorType)
-    );
+  FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[opLessOrEqual] + ' ' + ConvertSQLValue(pValue) + ')', FConnectorType));
 
   FConnectorType := ctAnd;
   FColumnName := EmptyStr;
@@ -1620,9 +1595,7 @@ begin
       vValue := QuotedStr('%' + pValue + '%');
   end;
 
-  FCriterias.Add(
-    TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[opLike] + ' ' + vValue+ ')', FConnectorType)
-    );
+  FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[opLike] + ' ' + vValue + ')', FConnectorType));
 
   FConnectorType := ctAnd;
   FColumnName := EmptyStr;
@@ -1648,9 +1621,7 @@ begin
       vValue := QuotedStr('%' + pValue + '%');
   end;
 
-  FCriterias.Add(
-    TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[opNotLike] + ' ' + vValue+ ')', FConnectorType)
-    );
+  FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[opNotLike] + ' ' + vValue + ')', FConnectorType));
 
   FConnectorType := ctAnd;
   FColumnName := EmptyStr;
@@ -1725,9 +1696,7 @@ function TSQLWhere._And(const pWhere: ISQLWhere): ISQLWhere;
 begin
   pWhere.AppendStatementToString(nil);
 
-  FCriterias.Add(
-    TSQLCriteria.Create('(' + AnsiReplaceText(pWhere.ToString, ' Where ', '') + ')', ctAnd)
-    );
+  FCriterias.Add(TSQLCriteria.Create('(' + AnsiReplaceText(pWhere.ToString, ' Where ', '') + ')', ctAnd));
 
   FConnectorType := ctAnd;
   FColumnName := EmptyStr;
@@ -1738,9 +1707,7 @@ function TSQLWhere._Or(const pWhere: ISQLWhere): ISQLWhere;
 begin
   pWhere.AppendStatementToString(nil);
 
-  FCriterias.Add(
-    TSQLCriteria.Create('(' + AnsiReplaceText(pWhere.ToString, ' Where ', '') + ')', ctOr)
-    );
+  FCriterias.Add(TSQLCriteria.Create('(' + AnsiReplaceText(pWhere.ToString, ' Where ', '') + ')', ctOr));
 
   FConnectorType := ctAnd;
   FColumnName := EmptyStr;
@@ -1862,12 +1829,12 @@ var
 begin
   Result := '';
 
-  if (FTable.Tablename = EmptyStr) then
+  if (FTable.TableName = EmptyStr) then
     Exit;
 
   vStrBuilder := TStringBuilder.Create;
   try
-    vStrBuilder.Append('Delete From ').Append(FTable.Tablename);
+    vStrBuilder.Append('Delete From ').Append(FTable.TableName);
 
     Result := vStrBuilder.ToString;
   finally
@@ -1951,9 +1918,7 @@ function TSQLUpdate.ColumnSetValue(const pColumnName: string; const pValue: TVal
 begin
   ColumnIsValid(pColumnName);
   FColumns.Add(pColumnName);
-  FValues.Add(
-    TSQLValue.Create(ConvertSQLValue(pValue))
-    );
+  FValues.Add(TSQLValue.Create(ConvertSQLValue(pValue)));
   Result := Self;
 end;
 
@@ -1978,12 +1943,12 @@ begin
   if (FColumns.Count <> FValues.Count) then
     raise ESQLBuilderException.Create('Columns count and Values count must be equal!');
 
-  if (FTable.Tablename = EmptyStr) then
+  if (FTable.TableName = EmptyStr) then
     Exit;
 
   vStrBuilder := TStringBuilder.Create;
   try
-    vStrBuilder.Append('Update ' + FTable.Tablename + ' Set');
+    vStrBuilder.Append('Update ' + FTable.TableName + ' Set');
 
     for I := 0 to Pred(FColumns.Count) do
     begin
@@ -2007,9 +1972,7 @@ var
 begin
   FValues.Clear;
   for I := low(pValues) to high(pValues) do
-    FValues.Add(
-      TSQLValue.Create(ConvertSQLValue(pValues[I]))
-      );
+    FValues.Add(TSQLValue.Create(ConvertSQLValue(pValues[I])));
   Result := Self;
 end;
 
@@ -2072,9 +2035,7 @@ function TSQLInsert.ColumnValue(const pColumnName: string; const pValue: TValue)
 begin
   ColumnIsValid(pColumnName);
   FColumns.Add(pColumnName);
-  FValues.Add(
-    TSQLValue.Create(ConvertSQLValue(pValue))
-    );
+  FValues.Add(TSQLValue.Create(ConvertSQLValue(pValue)));
   Result := Self;
 end;
 
@@ -2094,12 +2055,12 @@ begin
   if (FColumns.Count <> FValues.Count) then
     raise ESQLBuilderException.Create('Columns count and Values count must be equal!');
 
-  if (FTable.Tablename = EmptyStr) then
+  if (FTable.TableName = EmptyStr) then
     Exit;
 
   vStrBuilder := TStringBuilder.Create;
   try
-    vStrBuilder.Append('Insert Into ' + FTable.Tablename);
+    vStrBuilder.Append('Insert Into ' + FTable.TableName);
 
     vStrBuilder.AppendLine.Append(' (');
 
@@ -2141,9 +2102,7 @@ var
 begin
   FValues.Clear;
   for I := low(pValues) to high(pValues) do
-    FValues.Add(
-      TSQLValue.Create(ConvertSQLValue(pValues[I]))
-      );
+    FValues.Add(TSQLValue.Create(ConvertSQLValue(pValues[I])));
   Result := Self;
 end;
 

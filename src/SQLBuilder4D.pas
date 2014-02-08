@@ -5,7 +5,7 @@
   you may not use this file except in compliance with the License.
   You may obtain a copy of the License at
 
-            http://www.apache.org/licenses/LICENSE-2.0
+  http://www.apache.org/licenses/LICENSE-2.0
 
   Unless required by applicable law or agreed to in writing, software
   distributed under the License is distributed on an "AS IS" BASIS,
@@ -35,8 +35,7 @@ type
 
 const
 
-  _cSQLOperator: array [TSQLOperatorType] of string =
-    ('=', '<>', '>', '<', '>=', '<=', 'Like', 'Not Like');
+  _cSQLOperator: array [TSQLOperatorType] of string = ('=', '<>', '>', '<', '>=', '<=', 'Like', 'Not Like');
 
 type
 
@@ -311,10 +310,17 @@ type
     class function Update(): ISQLUpdate; static;
     class function Insert(): ISQLInsert; static;
 
-    class function Where(): ISQLWhere; static;
-    class function GroupBy(): ISQLGroupBy; static;
-    class function Having(): ISQLHaving; static;
-    class function OrderBy(): ISQLOrderBy; static;
+    class function Where(): ISQLWhere; overload; static;
+    class function Where(const pColumnName: string): ISQLWhere; overload; static;
+
+    class function GroupBy(): ISQLGroupBy; overload; static;
+    class function GroupBy(const pColumnNames: array of string): ISQLGroupBy; overload; static;
+
+    class function Having(): ISQLHaving; overload; static;
+    class function Having(const pHavingCriterias: array of string): ISQLHaving; overload; static;
+
+    class function OrderBy(): ISQLOrderBy; overload; static;
+    class function OrderBy(const pColumnNames: array of string): ISQLOrderBy; overload; static;
   end;
 
 implementation
@@ -345,6 +351,12 @@ begin
   Result := ServiceLocator.GetService<ISQLInsert>;
 end;
 
+class function TSQLBuilder.OrderBy(const pColumnNames: array of string): ISQLOrderBy;
+begin
+  Result := TSQLBuilder.OrderBy();
+  Result.Columns(pColumnNames);
+end;
+
 class function TSQLBuilder.OrderBy: ISQLOrderBy;
 begin
   Result := ServiceLocator.GetService<ISQLOrderBy>;
@@ -360,9 +372,27 @@ begin
   Result := ServiceLocator.GetService<ISQLUpdate>;
 end;
 
+class function TSQLBuilder.Where(const pColumnName: string): ISQLWhere;
+begin
+  Result := TSQLBuilder.Where();
+  Result.Column(pColumnName);
+end;
+
 class function TSQLBuilder.Where: ISQLWhere;
 begin
   Result := ServiceLocator.GetService<ISQLWhere>;
+end;
+
+class function TSQLBuilder.GroupBy(const pColumnNames: array of string): ISQLGroupBy;
+begin
+  Result := TSQLBuilder.GroupBy();
+  Result.Columns(pColumnNames);
+end;
+
+class function TSQLBuilder.Having(const pHavingCriterias: array of string): ISQLHaving;
+begin
+  Result := TSQLBuilder.Having();
+  Result.Aggregate(pHavingCriterias);
 end;
 
 end.
