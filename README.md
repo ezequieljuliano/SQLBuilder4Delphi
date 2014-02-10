@@ -5,7 +5,9 @@ Generates Delphi code from your database and lets you build typesafe SQL queries
 
 SQLBuilder4Delphi is a little Delphi library for dynamically generating SQL statements. It's sweet spot is for applications that need to build up complicated queries with criteria that changes at runtime. Ordinarily it can be quite painful to figure out how to build this string. SQLBuilder4Delphi takes much of this pain away.
 
-The code for SQLBuilder4Delphi is intentionally clean and simple. Rather than provide support for every thing you could ever do with SQL, it provides support for the most common situations and allows you to easily modify the source to suit your needs.
+SQLBuilder4Delphi applies the concept: DSL. This acronym stands for Domain Specific Language and portrays a common trend in modern languages ​​which basically consists in creating a subset of the language in order to facilitate the solution of simple and specific problems.
+
+The code of SQLBuilder4Delphi is intentionally clean and simple. Rather than provide support for every thing you could ever do with SQL, it provides support for the most common situations and allows you to easily modify the source to suit your needs.
 
 The SQLBuilder4Delphi API was developed and tested in Delphi XE5.
 
