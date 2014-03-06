@@ -23,11 +23,9 @@ uses
   System.Classes,
   System.SysUtils,
   System.Generics.Collections,
-  Spring,
-  Spring.Services,
   System.TypInfo,
-  System.StrUtils,
-  System.DateUtils;
+  System.Rtti,
+  System.StrUtils;
 
 type
 
@@ -161,7 +159,6 @@ type
     FCriterias: TList<ISQLCriteria>;
     FStatementToString: TFunc<string>;
     FStatementType: TSQLStatementType;
-    [Inject]
     FOrderBy: ISQLOrderBy;
     FUnions: TList<ISQLUnion>;
     procedure InternalAddUnion(const pUnionSQL: string; const pUnionType: TSQLUnionType);
@@ -199,9 +196,7 @@ type
     FCriterias: TList<ISQLCriteria>;
     FStatementToString: TFunc<string>;
     FStatementType: TSQLStatementType;
-    [Inject]
     FOrderBy: ISQLOrderBy;
-    [Inject]
     FHaving: ISQLHaving;
     FUnions: TList<ISQLUnion>;
     procedure InternalAddUnion(const pUnionSQL: string; const pUnionType: TSQLUnionType);
@@ -245,11 +240,8 @@ type
     FStatementType: TSQLStatementType;
     FColumnName: string;
     FConnectorType: TSQLConnectorType;
-    [Inject]
     FGroupBy: ISQLGroupBy;
-    [Inject]
     FHaving: ISQLHaving;
-    [Inject]
     FOrderBy: ISQLOrderBy;
     FUnions: TList<ISQLUnion>;
     procedure InternalAddUnion(const pUnionSQL: string; const pUnionType: TSQLUnionType);
@@ -316,17 +308,12 @@ type
     FStatementType: TSQLStatementType;
     FColumns: TStringList;
     FJoinedTables: TList<ISQLJoin>;
-    FUnions: TList<ISQLUnion>;
-    [Inject]
     FFromTable: ISQLTable;
-    [Inject]
     FGroupBy: ISQLGroupBy;
-    [Inject]
     FHaving: ISQLHaving;
-    [Inject]
     FOrderBy: ISQLOrderBy;
-    [Inject]
     FWhere: ISQLWhere;
+    FUnions: TList<ISQLUnion>;
   public
     procedure AfterConstruction; override;
     procedure BeforeDestruction; override;
@@ -377,9 +364,7 @@ type
   TSQLDelete = class(TInterfacedObject, ISQLDelete)
   strict private
     FStatementType: TSQLStatementType;
-    [Inject]
     FTable: ISQLTable;
-    [Inject]
     FWhere: ISQLWhere;
   public
     procedure AfterConstruction; override;
@@ -403,9 +388,7 @@ type
     FStatementType: TSQLStatementType;
     FColumns: TStringList;
     FValues: TList<ISQLValue>;
-    [Inject]
     FTable: ISQLTable;
-    [Inject]
     FWhere: ISQLWhere;
   public
     procedure AfterConstruction; override;
@@ -432,7 +415,6 @@ type
     FStatementType: TSQLStatementType;
     FColumns: TStringList;
     FValues: TList<ISQLValue>;
-    [Inject]
     FTable: ISQLTable;
   public
     procedure AfterConstruction; override;
@@ -451,10 +433,6 @@ type
   end;
 
 implementation
-
-type
-
-  TMsysSQLDateType = (dtDate, dtDateTime, dtTime);
 
 procedure ColumnIsValid(const pColumnName: string);
 begin
@@ -483,16 +461,6 @@ begin
       raise ESQLBuilderException.Create('Value reported for SQL Builder is invalid!');
 end;
 
-function GetSQLDateType(const pDate: TDateTime): TMsysSQLDateType;
-begin
-  if (pDate = DateOf(pDate)) then
-    Result := TMsysSQLDateType.dtDate
-  else if (pDate = TimeOf(pDate)) then
-    Result := TMsysSQLDateType.dtTime
-  else
-    Result := TMsysSQLDateType.dtDateTime;
-end;
-
 function ConvertSQLValue(const pValue: TValue): string;
 begin
   Result := pValue.ToString;
@@ -503,27 +471,17 @@ begin
   ValidateSQLReservedWord(Result);
 
   case pValue.Kind of
-    tkChar, tkString, tkWChar, tkLString, tkWString, tkUString:
+    tkUString, tkWChar, tkLString, tkWString, tkString, tkChar:
       begin
         Result := QuotedStr(Result);
       end;
+    tkUnknown:
+      begin
+        Result := QuotedStr('Null');
+      end;
     tkFloat:
       begin
-        if (pValue.IsType<TDateTime>) then
-        begin
-          case GetSQLDateType(FloatToDateTime(pValue.AsExtended)) of
-            dtDate:
-              Result := QuotedStr(FormatDateTime('ddddd', pValue.AsExtended));
-            dtDateTime:
-              Result := QuotedStr(FormatDateTime('c', pValue.AsExtended));
-            dtTime:
-              Result := QuotedStr(FormatDateTime('tt', pValue.AsExtended))
-          else
-            raise ESQLBuilderException.Create('DateTime is not valid!');
-          end;
-        end
-        else
-          Result := AnsiReplaceText(Result, ',', '.');
+        Result := AnsiReplaceText(Result, ',', '.');
       end;
   end;
 end;
@@ -697,6 +655,7 @@ begin
   FCriterias := TList<ISQLCriteria>.Create;
   FStatementToString := nil;
   FStatementType := stNone;
+  FOrderBy := TSQLOrderBy.Create;
   FUnions := TList<ISQLUnion>.Create;
 end;
 
@@ -858,6 +817,8 @@ begin
   FCriterias := TList<ISQLCriteria>.Create;
   FStatementToString := nil;
   FStatementType := stNone;
+  FOrderBy := TSQLOrderBy.Create;
+  FHaving := TSQLHaving.Create;
   FUnions := TList<ISQLUnion>.Create;
 end;
 
@@ -1024,6 +985,11 @@ begin
   FColumns.Delimiter := ',';
   FColumns.StrictDelimiter := True;
   FJoinedTables := TList<ISQLJoin>.Create;
+  FFromTable := TSQLTable.Create;
+  FGroupBy := TSQLGroupBy.Create;
+  FHaving := TSQLHaving.Create;
+  FOrderBy := TSQLOrderBy.Create;
+  FWhere := TSQLWhere.Create;
   FUnions := TList<ISQLUnion>.Create;
 end;
 
@@ -1330,6 +1296,9 @@ begin
   FColumnName := EmptyStr;
   FConnectorType := ctAnd;
   FStatementType := stNone;
+  FGroupBy := TSQLGroupBy.Create;
+  FHaving := TSQLHaving.Create;
+  FOrderBy := TSQLOrderBy.Create;
   FUnions := TList<ISQLUnion>.Create;
 end;
 
@@ -1804,6 +1773,8 @@ procedure TSQLDelete.AfterConstruction;
 begin
   inherited AfterConstruction;
   FStatementType := stDelete;
+  FTable := TSQLTable.Create;
+  FWhere := TSQLWhere.Create;
 end;
 
 procedure TSQLDelete.BeforeDestruction;
@@ -1892,6 +1863,8 @@ begin
   FStatementType := stUpdate;
   FColumns := TStringList.Create;
   FValues := TList<ISQLValue>.Create;
+  FTable := TSQLTable.Create;
+  FWhere := TSQLWhere.Create;
 end;
 
 procedure TSQLUpdate.BeforeDestruction;
@@ -2004,6 +1977,7 @@ begin
   FStatementType := stInsert;
   FColumns := TStringList.Create;
   FValues := TList<ISQLValue>.Create;
+  FTable := TSQLTable.Create;
 end;
 
 procedure TSQLInsert.BeforeDestruction;

@@ -41,6 +41,7 @@ type
     procedure TestSQLUpdate();
     procedure TestSQLInsert();
     procedure TestSQLDateTime();
+    procedure TestSQLFloat();
   end;
 
 implementation
@@ -92,36 +93,30 @@ const
     ' Where (C.C_Time = ''01:05:22'')';
 var
   vOut: string;
-  vDate: TDate;
-  vDateTime: TDateTime;
-  vTime: TTime;
 begin
-  vDate := StrToDate('01/01/2014');
   vOut := TSQLBuilder
     .Select
     .AllColumns
     .From('Customers C')
-    .Where('C.C_Date').Equal(vDate)
+    .Where('C.C_Date').Equal('01/01/2014')
     .ToString;
 
   CheckEqualsString(cSelectDate, vOut);
 
-  vDateTime := StrToDateTime('01/01/2014 01:05:22');
   vOut := TSQLBuilder
     .Select
     .AllColumns
     .From('Customers C')
-    .Where('C.C_DateTime').Equal(vDateTime)
+    .Where('C.C_DateTime').Equal('01/01/2014 01:05:22')
     .ToString;
 
   CheckEqualsString(cSelectDateTime, vOut);
 
-  vTime := StrToTime('01:05:22');
   vOut := TSQLBuilder
     .Select
     .AllColumns
     .From('Customers C')
-    .Where('C.C_Time').Equal(vTime)
+    .Where('C.C_Time').Equal('01:05:22')
     .ToString;
 
   CheckEqualsString(cSelectTime, vOut);
@@ -155,6 +150,29 @@ begin
     )
     .ToString;
   CheckEqualsString(cDeleteWithWhere, vOut);
+end;
+
+procedure TTestSQLBuilder4D.TestSQLFloat;
+const
+  cSelectDate =
+    'Select '
+    + sLineBreak +
+    ' *'
+    + sLineBreak +
+    ' From Customers C'
+    + sLineBreak +
+    ' Where (C.C_Value = 25.22)';
+var
+  vOut: string;
+begin
+  vOut := TSQLBuilder
+    .Select
+    .AllColumns
+    .From('Customers C')
+    .Where('C.C_Value').Equal(25.22)
+    .ToString;
+
+  CheckEqualsString(cSelectDate, vOut);
 end;
 
 procedure TTestSQLBuilder4D.TestSQLInjection;

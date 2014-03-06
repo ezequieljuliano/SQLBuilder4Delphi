@@ -326,29 +326,28 @@ type
 implementation
 
 uses
-  Spring,
-  Spring.Services;
+  SQLBuilder4D.Impl;
 
 { TSQLBuilder }
 
 class function TSQLBuilder.Delete: ISQLDelete;
 begin
-  Result := ServiceLocator.GetService<ISQLDelete>;
+  Result := TSQLDelete.Create;
 end;
 
 class function TSQLBuilder.GroupBy: ISQLGroupBy;
 begin
-  Result := ServiceLocator.GetService<ISQLGroupBy>;
+  Result := TSQLGroupBy.Create;
 end;
 
 class function TSQLBuilder.Having: ISQLHaving;
 begin
-  Result := ServiceLocator.GetService<ISQLHaving>;
+  Result := TSQLHaving.Create;
 end;
 
 class function TSQLBuilder.Insert: ISQLInsert;
 begin
-  Result := ServiceLocator.GetService<ISQLInsert>;
+  Result := TSQLInsert.Create;
 end;
 
 class function TSQLBuilder.OrderBy(const pColumnNames: array of string): ISQLOrderBy;
@@ -359,17 +358,17 @@ end;
 
 class function TSQLBuilder.OrderBy: ISQLOrderBy;
 begin
-  Result := ServiceLocator.GetService<ISQLOrderBy>;
+  Result := TSQLOrderBy.Create;
 end;
 
 class function TSQLBuilder.Select: ISQLSelect;
 begin
-  Result := ServiceLocator.GetService<ISQLSelect>;
+  Result := TSQLSelect.Create;
 end;
 
 class function TSQLBuilder.Update: ISQLUpdate;
 begin
-  Result := ServiceLocator.GetService<ISQLUpdate>;
+  Result := TSQLUpdate.Create;
 end;
 
 class function TSQLBuilder.Where(const pColumnName: string): ISQLWhere;
@@ -380,7 +379,7 @@ end;
 
 class function TSQLBuilder.Where: ISQLWhere;
 begin
-  Result := ServiceLocator.GetService<ISQLWhere>;
+  Result := TSQLWhere.Create;
 end;
 
 class function TSQLBuilder.GroupBy(const pColumnNames: array of string): ISQLGroupBy;

@@ -11,14 +11,6 @@ The code of SQLBuilder4Delphi is intentionally clean and simple. Rather than pro
 
 The SQLBuilder4Delphi API was developed and tested in Delphi XE5.
 
-
-External Dependencies
-=================
-This library requires the following external dependencies that are already included in their sources:
-
-
-- Delphi Spring Framework (https://bitbucket.org/sglienke/spring4d);
-
 Features
 ========
 
@@ -29,6 +21,11 @@ Features
 - Supports SELECT, UPDATE, INSERT and DELETE statements;   
 - Suports JOIN, UNION, SUB-SELECT, WHERE, GROUP BY, HAVING, ORDER BY;
 - Combine criteria with AND, OR and NOT operators;
+
+Limitations
+===========
+
+- Values ​​of type TDateTime, TDate, TTime should be used as string, for through TValue can not differentiate these types of a Float. (Example: Where('FieldDateTime').Equal('01/01/2014 01:05:22'));
 
 Examples
 =========
@@ -125,17 +122,8 @@ Using SQLBuilder4Delphi
 
 Using this library will is very simple, you simply add the Search Path of your IDE or your project the following directories:
 
-- SQLBuilder4Delphi\dependencies\Spring4D\Source\Base
-- SQLBuilder4Delphi\dependencies\Spring4D\Source\Base\Collections
-- SQLBuilder4Delphi\dependencies\Spring4D\Source\Base\Reflection
-- SQLBuilder4Delphi\dependencies\Spring4D\Source\Core\Container
-- SQLBuilder4Delphi\dependencies\Spring4D\Source\Core\Services
 - SQLBuilder4Delphi\src\
 
-Then you should add to your DPR a Unit responsible for making the records to be used in Dependency Injection.: 
-
-Add Uses of DPR, preferably at the end of the next row.: 
-
-- SQLBuilder4D.Module.Register
+Then just add your implementation to SQLBuilder4D.pas.
 
 Analyze the unit tests they will assist you.
