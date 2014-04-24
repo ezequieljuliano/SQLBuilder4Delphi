@@ -1,5 +1,5 @@
 (*
-  Copyright 2013 Ezequiel Juliano Müller - ezequieljuliano@gmail.com
+  Copyright 2014 Ezequiel Juliano Müller - ezequieljuliano@gmail.com
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -22,7 +22,8 @@ uses
   TestFramework,
   System.Classes,
   System.SysUtils,
-  System.TypInfo;
+  System.TypInfo,
+  SQLBuilder4D.Parser;
 
 type
 
@@ -42,6 +43,7 @@ type
     procedure TestSQLInsert();
     procedure TestSQLDateTime();
     procedure TestSQLFloat();
+    procedure TestSQLParserSelect();
   end;
 
 implementation
@@ -220,6 +222,236 @@ begin
     .Values([1, 'Ejm', 58])
     .ToString;
   CheckEqualsString(cInsert, vOut);
+end;
+
+procedure TTestSQLBuilder4D.TestSQLParserSelect;
+const
+  cSQL =
+    'Select '
+    + sLineBreak +
+    '   Customers.C_Cod, '
+    + sLineBreak +
+    '   Customers.C_Name, '
+    + sLineBreak +
+    '   Customers.C_Doc, '
+    + sLineBreak +
+    '   Sum(Customers.C_Limit) as Limite  '
+    + sLineBreak +
+    'From Customers '
+    + sLineBreak +
+    'Inner Join Places On (Customers.P_Code = Places.P_Code) '
+    + sLineBreak +
+    'Where '
+    + sLineBreak +
+    '    (Customers.C_Cod = 10) And '
+    + sLineBreak +
+    '    (Customers.C_Name = ''Ezequiel'') '
+    + sLineBreak +
+    'Group By '
+    + sLineBreak +
+    '     Customers.C_Cod, '
+    + sLineBreak +
+    '     Customers.C_Name, '
+    + sLineBreak +
+    '     Customers.C_Doc '
+    + sLineBreak +
+    'Having '
+    + sLineBreak +
+    '    (Customers.C_Cod > 0) '
+    + sLineBreak +
+    'Order By '
+    + sLineBreak +
+    '     Customers.C_Cod ';
+
+  cSQLSelect =
+    'Customers.C_Cod, '
+    + sLineBreak +
+    '   Customers.C_Name, '
+    + sLineBreak +
+    '   Customers.C_Doc, '
+    + sLineBreak +
+    '   Sum(Customers.C_Limit) as Limite  '
+    + sLineBreak;
+
+  cSQLFrom =
+    ' Customers '
+    + sLineBreak;
+
+  cSQLJoin =
+    'Inner Join Places On (Customers.P_Code = Places.P_Code) '
+    + sLineBreak;
+
+  cSQLWhere =
+    '(Customers.C_Cod = 10) And '
+    + sLineBreak +
+    '    (Customers.C_Name = ''Ezequiel'') '
+    + sLineBreak;
+
+  cSQLGroupBy =
+    'Customers.C_Cod, '
+    + sLineBreak +
+    '     Customers.C_Name, '
+    + sLineBreak +
+    '     Customers.C_Doc '
+    + sLineBreak;
+
+  cSQLHaving =
+    '(Customers.C_Cod > 0) '
+    + sLineBreak;
+
+  cSQLOrderBy =
+    'Customers.C_Cod '
+    + sLineBreak;
+
+  cSetSQLSelect =
+    'Customers.C_Name, '
+    + sLineBreak +
+    '   Customers.C_Cod, '
+    + sLineBreak +
+    '   Customers.C_Doc, '
+    + sLineBreak +
+    '   Sum(Customers.C_Value) as Value  '
+    + sLineBreak;
+
+  cSetSQLFrom =
+    ' Customers C '
+    + sLineBreak;
+
+  cSetSQLJoin =
+    'Left Outer Join Places On (Customers.P_Code = Places.P_Code) '
+    + sLineBreak;
+
+  cSetSQLWhere =
+    '(Customers.C_Cod = 500) And '
+    + sLineBreak +
+    '    (Customers.C_Name = ''Juliano'') '
+    + sLineBreak;
+
+  cSetSQLGroupBy =
+    'Customers.C_Name, '
+    + sLineBreak +
+    '     Customers.C_Cod, '
+    + sLineBreak +
+    '     Customers.C_Doc '
+    + sLineBreak;
+
+  cSetSQLHaving =
+    '(Customers.C_Doc > 0) '
+    + sLineBreak;
+
+  cSetSQLOrderBy =
+    'Customers.C_Doc '
+    + sLineBreak;
+
+  cSQLValidateSet =
+    'Select '
+    + sLineBreak +
+    '   Customers.C_Name, '
+    + sLineBreak +
+    '   Customers.C_Cod, '
+    + sLineBreak +
+    '   Customers.C_Doc, '
+    + sLineBreak +
+    '   Sum(Customers.C_Value) as Value  '
+    + sLineBreak +
+    'From Customers C '
+    + sLineBreak +
+    'Left Outer Join Places On (Customers.P_Code = Places.P_Code) '
+    + sLineBreak +
+    'where ' +
+    '(Customers.C_Cod = 500) And '
+    + sLineBreak +
+    '    (Customers.C_Name = ''Juliano'') '
+    + sLineBreak +
+    'group by ' +
+    'Customers.C_Name, '
+    + sLineBreak +
+    '     Customers.C_Cod, '
+    + sLineBreak +
+    '     Customers.C_Doc '
+    + sLineBreak +
+    'having ' +
+    '(Customers.C_Doc > 0) '
+    + sLineBreak +
+    'order by ' +
+    'Customers.C_Doc '
+    + sLineBreak;
+
+  cSQLValidateAddOrSet =
+    'Select '
+    + sLineBreak +
+    '   Customers.C_Cod, '
+    + sLineBreak +
+    '   Customers.C_Name, '
+    + sLineBreak +
+    '   Customers.C_Doc, '
+    + sLineBreak +
+    '   Sum(Customers.C_Limit) as Limite  '
+    + sLineBreak +
+    ','+
+    ' Customers.C_Test ' +
+    'From Customers '
+    + sLineBreak +
+    ','+
+    ' Customers S ' +
+    'Inner Join Places On (Customers.P_Code = Places.P_Code) '
+    + sLineBreak +
+    'Left Outer Join Places On (Customers.P_Code = Places.P_Code) ' +
+    'where ' +
+    '(Customers.C_Cod = 10) And '
+    + sLineBreak +
+    '    (Customers.C_Name = ''Ezequiel'') '
+    + sLineBreak +
+    ' And ((Customers.C_Cod = 700)) ' +
+    'group by ' +
+    'Customers.C_Cod, '
+    + sLineBreak +
+    '     Customers.C_Name, '
+    + sLineBreak +
+    '     Customers.C_Doc '
+    + sLineBreak +
+    ','+
+    ' Customers.C_Value ' +
+    'having ' +
+    '(Customers.C_Cod > 0) '
+    + sLineBreak +
+    ' And ((Customers.C_Doc < 300)) ' +
+    'order by ' +
+    'Customers.C_Cod '
+    + sLineBreak +
+    ', Customers.C_Doc ';
+var
+  vSQLParserSelect: ISQLParserSelect;
+begin
+  vSQLParserSelect := TSQLParserFactory.GetSelectInstance(prGaSQLParser);
+
+  vSQLParserSelect.Parse(cSQL);
+  CheckEqualsString(cSQLSelect, vSQLParserSelect.GetSelect);
+  CheckEqualsString(cSQLFrom, vSQLParserSelect.GetFrom);
+  CheckEqualsString(cSQLJoin, vSQLParserSelect.GetJoin);
+  CheckEqualsString(cSQLWhere, vSQLParserSelect.GetWhere);
+  CheckEqualsString(cSQLGroupBy, vSQLParserSelect.GetGroupBy);
+  CheckEqualsString(cSQLHaving, vSQLParserSelect.GetHaving);
+  CheckEqualsString(cSQLOrderBy, vSQLParserSelect.GetOrderBy);
+
+  vSQLParserSelect.SetSelect(cSetSQLSelect);
+  vSQLParserSelect.SetFrom(cSetSQLFrom);
+  vSQLParserSelect.SetJoin(cSetSQLJoin);
+  vSQLParserSelect.SetWhere(cSetSQLWhere);
+  vSQLParserSelect.SetGroupBy(cSetSQLGroupBy);
+  vSQLParserSelect.SetHaving(cSetSQLHaving);
+  vSQLParserSelect.SetOrderBy(cSetSQLOrderBy);
+  CheckEqualsString(cSQLValidateSet, vSQLParserSelect.GetSQLText);
+
+  vSQLParserSelect.Parse(cSQL);
+  vSQLParserSelect.AddOrSetSelect('Customers.C_Test');
+  vSQLParserSelect.AddOrSetFrom('Customers S');
+  vSQLParserSelect.AddOrSetJoin('Left Outer Join Places On (Customers.P_Code = Places.P_Code)');
+  vSQLParserSelect.AddOrSetWhere('(Customers.C_Cod = 700)');
+  vSQLParserSelect.AddOrSetGroupBy('Customers.C_Value');
+  vSQLParserSelect.AddOrSetHaving('(Customers.C_Doc < 300)');
+  vSQLParserSelect.AddOrSetOrderBy('Customers.C_Doc');
+  CheckEqualsString(cSQLValidateAddOrSet, vSQLParserSelect.GetSQLText);
 end;
 
 procedure TTestSQLBuilder4D.TestSQLSelect;

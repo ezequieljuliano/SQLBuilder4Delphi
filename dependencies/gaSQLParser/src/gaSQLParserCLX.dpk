@@ -1,0 +1,49 @@
+{*******************************************************}
+{                                                       }
+{       SQL statement parser components CLX package     }
+{       Copyright (c) 2001- 2003 AS Gaiasoft            }
+{       Created by Gert Kello                           }
+{                                                       }
+{*******************************************************}
+package gaSQLParserCLX;
+
+{$R *.res}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO ON}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION ON}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO ON}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES OFF}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST OFF}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$IMPLICITBUILD OFF}
+
+requires
+  baseclx;
+
+contains
+  gaAdvancedSQLParser in 'gaAdvancedSQLParser.pas',
+  gaBasicSQLParser in 'gaBasicSQLParser.pas',
+  gaDeleteStm in 'gaDeleteStm.pas',
+  gaInsertStm in 'gaInsertStm.pas',
+  gaLnkList in 'gaLnkList.pas',
+  gaQueryParsersReg in 'gaQueryParsersReg.pas',
+  gaSQLParserConsts in 'gaSQLParserConsts.pas',
+  gaSQLParserHelperClasses in 'gaSQLParserHelperClasses.pas',
+  gaSelectStm in 'gaSelectStm.pas',
+  gaUpdateStm in 'gaUpdateStm.pas';
+
+end.

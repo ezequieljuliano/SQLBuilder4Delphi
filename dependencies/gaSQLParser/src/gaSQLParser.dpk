@@ -1,0 +1,59 @@
+{*******************************************************}
+{                                                       }
+{       SQL statement parser components VCL package     }
+{       Copyright (c) 2001- 2003 AS Gaiasoft            }
+{       Created by Gert Kello                           }
+{                                                       }
+{*******************************************************}
+
+package gaSQLParser;
+
+{$R *.res}
+{$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO OFF}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS OFF}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION OFF}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO OFF}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES ON}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST ON}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DEFINE RELEASE}
+{$ENDIF IMPLICITBUILDING}
+{$DESCRIPTION 'Gaiasoft: SQL parser'}
+
+
+requires
+  rtl;
+
+contains
+  gaBasicSQLParser in 'gaBasicSQLParser.pas',
+  gaAdvancedSQLParser in 'gaAdvancedSQLParser.pas',
+  gaSelectStm in 'gaSelectStm.pas',
+  gaSQLParserHelperClasses in 'gaSQLParserHelperClasses.pas',
+  gaUpdateStm in 'gaUpdateStm.pas',
+  gaSQLParserConsts in 'gaSQLParserConsts.pas',
+  gaDeleteStm in 'gaDeleteStm.pas',
+  gaQueryParsersReg in 'gaQueryParsersReg.pas',
+  gaInsertStm in 'gaInsertStm.pas',
+  gaLnkList in 'gaLnkList.pas',
+  gaParserVisitor in 'gaParserVisitor.pas',
+  gaSQLFieldRefParsers in 'gaSQLFieldRefParsers.pas',
+  gaSQLSelectFieldParsers in 'gaSQLSelectFieldParsers.pas',
+  gaSQLExpressionParsers in 'gaSQLExpressionParsers.pas',
+  gaSQLTableRefParsers in 'gaSQLTableRefParsers.pas';
+
+end.

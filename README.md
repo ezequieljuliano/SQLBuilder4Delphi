@@ -27,6 +27,13 @@ Limitations
 
 - Values ​​of type TDateTime, TDate, TTime should be used as string, for through TValue can not differentiate these types of a Float. (Example: Where('FieldDateTime').Equal('01/01/2014 01:05:22'));
 
+External Dependencies
+=====================
+
+To perform the SQLParser SQLBuilder4D uses gaSQLParser. Therefore this dependence is included in the project within the "dependencies" folder. If you use the library parser you should add to the Path gaSQLParser.
+
+- gaSQLParser (http://sourceforge.net/projects/gasqlparser/);
+
 Examples
 =========
 
@@ -123,6 +130,7 @@ Using SQLBuilder4Delphi
 Using this library will is very simple, you simply add the Search Path of your IDE or your project the following directories:
 
 - SQLBuilder4Delphi\src\
+- SQLBuilder4Delphi\dependencies\gaSQLParser\src
 
 Then just add your implementation to SQLBuilder4D.pas.
 

@@ -1,5 +1,5 @@
 (*
-  Copyright 2013 Ezequiel Juliano Müller - ezequieljuliano@gmail.com
+  Copyright 2014 Ezequiel Juliano Müller - ezequieljuliano@gmail.com
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -35,7 +35,9 @@ uses
   DUnitTestRunner,
   SQLBuilder4D in '..\src\SQLBuilder4D.pas',
   SQLBuilder4D.Impl in '..\src\SQLBuilder4D.Impl.pas',
-  SQLBuilder4D.UnitTest in 'SQLBuilder4D.UnitTest.pas';
+  SQLBuilder4D.UnitTest in 'SQLBuilder4D.UnitTest.pas',
+  SQLBuilder4D.Parser in '..\src\SQLBuilder4D.Parser.pas',
+  SQLBuilder4D.Parser.GaSQLParser in '..\src\SQLBuilder4D.Parser.GaSQLParser.pas';
 
 {$R *.RES}
 
