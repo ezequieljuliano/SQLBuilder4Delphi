@@ -219,12 +219,38 @@ type
     function Union(const pOrderBy: ISQLOrderBy; const pType: TSQLUnionType = utUnion): ISQLWhere; overload;
   end;
 
+  ISQLCoalesce = interface(ISQL)
+    ['{F44693CC-E21A-48C0-A2E9-B70C4BBB693E}']
+    function Value(const pValue: TValue): ISQLCoalesce;
+    function GetValue(): TValue;
+  end;
+
+  TSQLAggregateFunctions = (aggAvg, aggCount, aggMax, aggMin, aggSum);
+
+  ISQLAggregate = interface(ISQL)
+    ['{054F1173-B2FE-4783-B491-AECF9F6F6AA7}']
+    function AggFunction(const pFunction: TSQLAggregateFunctions): ISQLAggregate;
+    function AggExpression(const pExpression: string): ISQLAggregate;
+    function AggAlias(const pAlias: string): ISQLAggregate;
+    function AggCoalesce(const pCoalesce: ISQLCoalesce): ISQLAggregate;
+
+    function GetAggFunction(): TSQLAggregateFunctions;
+    function GetAggExpression(): string;
+    function GetAggAlias(): string;
+    function GetAggCoalesce(): ISQLCoalesce;
+
+    function ToString(const pOwnerCoalesce: ISQLCoalesce = nil): string;
+  end;
+
   ISQLSelect = interface(ISQLStatement)
     ['{80AB8C0C-A2AD-4EDC-8E05-F2F6D4D80A7A}']
     function Distinct(): ISQLSelect;
 
     function AllColumns(): ISQLSelect;
-    function Column(const pColumnName: string): ISQLSelect;
+    function Column(const pColumnName: string): ISQLSelect; overload;
+    function Column(const pColumnName: string; const pCoalesce: ISQLCoalesce; const pColumnAlias: string = ''): ISQLSelect; overload;
+    function Column(const pAggregate: ISQLAggregate): ISQLSelect; overload;
+    function Column(const pAggregate: ISQLAggregate; const pCoalesce: ISQLCoalesce): ISQLSelect; overload;
 
     function SubSelect(const pSelect: ISQLSelect; const pAlias: string): ISQLSelect; overload;
     function SubSelect(const pWhere: ISQLWhere; const pAlias: string): ISQLSelect; overload;
@@ -289,7 +315,7 @@ type
     function Values(const pValues: array of TValue): ISQLInsert;
   end;
 
-  TSQLBuilder = class
+  TSQLBuilder = class sealed
   public
     class function Select(): ISQLSelect; static;
     class function Delete(): ISQLDelete; static;
@@ -307,6 +333,14 @@ type
 
     class function OrderBy(): ISQLOrderBy; overload; static;
     class function OrderBy(const pColumnNames: array of string): ISQLOrderBy; overload; static;
+
+    class function Coalesce(): ISQLCoalesce; overload; static;
+    class function Coalesce(const pValue: TValue): ISQLCoalesce; overload; static;
+
+    class function Aggregate(): ISQLAggregate; overload; static;
+    class function Aggregate(const pFunction: TSQLAggregateFunctions;
+      const pExpression, pAlias: string;
+      const pCoalesce: ISQLCoalesce): ISQLAggregate; overload; static;
   end;
 
 implementation
@@ -315,6 +349,34 @@ uses
   SQLBuilder4D.Impl;
 
 { TSQLBuilder }
+
+class function TSQLBuilder.Coalesce: ISQLCoalesce;
+begin
+  Result := TSQLCoalesce.Create;
+end;
+
+class function TSQLBuilder.Aggregate: ISQLAggregate;
+begin
+  Result := TSQLAggregate.Create;
+end;
+
+class function TSQLBuilder.Aggregate(const pFunction: TSQLAggregateFunctions;
+  const pExpression, pAlias: string;
+  const pCoalesce: ISQLCoalesce): ISQLAggregate;
+begin
+  Result := TSQLBuilder.Aggregate();
+  Result
+    .AggFunction(pFunction)
+    .AggExpression(pExpression)
+    .AggAlias(pAlias)
+    .AggCoalesce(pCoalesce);
+end;
+
+class function TSQLBuilder.Coalesce(const pValue: TValue): ISQLCoalesce;
+begin
+  Result := TSQLBuilder.Coalesce();
+  Result.Value(pValue);
+end;
 
 class function TSQLBuilder.Delete: ISQLDelete;
 begin

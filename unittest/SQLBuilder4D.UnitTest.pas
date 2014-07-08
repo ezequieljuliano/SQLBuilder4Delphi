@@ -22,6 +22,8 @@ type
     procedure TestSQLSelectWhere();
     procedure TestSQLSelectUnion();
     procedure TestSQLSelectDistinct();
+    procedure TestSQLSelectColumnCoalesce();
+    procedure TestSQLSelectAggregate();
     procedure TestSQLInjection();
     procedure TestSQLDelete();
     procedure TestSQLUpdate();
@@ -598,6 +600,113 @@ begin
     .From('Customers')
     .ToString;
   CheckEqualsString(cSelectSubSelect, vOut);
+end;
+
+procedure TTestSQLBuilder4D.TestSQLSelectAggregate;
+const
+  cSelect_1 =
+    'Select '
+    + sLineBreak +
+    ' Sum(C_Code * 1), C_Name, C_Doc'
+    + sLineBreak +
+    ' From Customers';
+
+  cSelect_2 =
+    'Select '
+    + sLineBreak +
+    ' Sum(C_Code * 1) As CodeM, C_Name, C_Doc'
+    + sLineBreak +
+    ' From Customers';
+
+  cSelect_3 =
+    'Select '
+    + sLineBreak +
+    ' Sum(Coalesce(C_Code * 1,0)) As CodeM, C_Name, C_Doc'
+    + sLineBreak +
+    ' From Customers';
+
+  cSelect_4 =
+    'Select '
+    + sLineBreak +
+    ' Coalesce(Sum(Coalesce(C_Code * 1,0)),0) As CodeM, C_Name, C_Doc'
+    + sLineBreak +
+    ' From Customers';
+var
+  vOut: string;
+begin
+  vOut :=
+    TSQLBuilder.Select
+    .Column(
+    TSQLBuilder.Aggregate
+    .AggFunction(aggSum).AggExpression('C_Code * 1')
+    )
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cSelect_1, vOut);
+
+  vOut :=
+    TSQLBuilder.Select
+    .Column(
+    TSQLBuilder.Aggregate
+    .AggFunction(aggSum).AggExpression('C_Code * 1').AggAlias('CodeM')
+    )
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cSelect_2, vOut);
+
+  vOut :=
+    TSQLBuilder.Select
+    .Column(
+    TSQLBuilder.Aggregate
+    .AggFunction(aggSum).AggExpression('C_Code * 1').AggAlias('CodeM').AggCoalesce(TSQLBuilder.Coalesce.Value(0)),
+    TSQLBuilder.Coalesce.Value(0)
+    )
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cSelect_4, vOut);
+end;
+
+procedure TTestSQLBuilder4D.TestSQLSelectColumnCoalesce;
+const
+  cSelect_1 =
+    'Select '
+    + sLineBreak +
+    ' Coalesce(C_Code,0), C_Name, C_Doc'
+    + sLineBreak +
+    ' From Customers';
+
+  cSelect_2 =
+    'Select '
+    + sLineBreak +
+    ' Coalesce(C_Code,0) As Code, C_Name, C_Doc'
+    + sLineBreak +
+    ' From Customers';
+var
+  vOut: string;
+begin
+  vOut :=
+    TSQLBuilder.Select
+    .Column('C_Code', TSQLBuilder.Coalesce.Value(0))
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cSelect_1, vOut);
+
+  vOut :=
+    TSQLBuilder.Select
+    .Column('C_Code', TSQLBuilder.Coalesce.Value(0), 'Code')
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cSelect_2, vOut);
 end;
 
 procedure TTestSQLBuilder4D.TestSQLSelectDistinct;

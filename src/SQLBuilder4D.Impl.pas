@@ -287,6 +287,40 @@ type
     property Criterias: TList<ISQLCriteria> read GetCriterias;
   end;
 
+  TSQLCoalesce = class(TInterfacedObject, ISQLCoalesce)
+  strict private
+    FValue: TValue;
+  public
+    constructor Create(); overload;
+    constructor Create(const pValue: TValue); overload;
+
+    function Value(const pValue: TValue): ISQLCoalesce;
+    function GetValue(): TValue;
+  end;
+
+  TSQLAggregate = class(TInterfacedObject, ISQLAggregate)
+  strict private
+    FFunction: TSQLAggregateFunctions;
+    FExpression: string;
+    FAlias: string;
+    FCoalesce: ISQLCoalesce;
+  public
+    constructor Create(); overload;
+    constructor Create(const pFunction: TSQLAggregateFunctions; const pExpression, pAlias: string; const pCoalesce: ISQLCoalesce); overload;
+
+    function AggFunction(const pFunction: TSQLAggregateFunctions): ISQLAggregate;
+    function AggExpression(const pExpression: string): ISQLAggregate;
+    function AggAlias(const pAlias: string): ISQLAggregate;
+    function AggCoalesce(const pCoalesce: ISQLCoalesce): ISQLAggregate;
+
+    function GetAggFunction(): TSQLAggregateFunctions;
+    function GetAggExpression(): string;
+    function GetAggAlias(): string;
+    function GetAggCoalesce(): ISQLCoalesce;
+
+    function ToString(const pOwnerCoalesce: ISQLCoalesce = nil): string;
+  end;
+
   TSQLSelect = class(TInterfacedObject, ISQLSelect)
   strict private
     FStatementType: TSQLStatementType;
@@ -308,7 +342,10 @@ type
     function Distinct(): ISQLSelect;
 
     function AllColumns(): ISQLSelect;
-    function Column(const pColumnName: string): ISQLSelect;
+    function Column(const pColumnName: string): ISQLSelect; overload;
+    function Column(const pColumnName: string; const pCoalesce: ISQLCoalesce; const pColumnAlias: string = ''): ISQLSelect; overload;
+    function Column(const pAggregate: ISQLAggregate): ISQLSelect; overload;
+    function Column(const pAggregate: ISQLAggregate; const pCoalesce: ISQLCoalesce): ISQLSelect; overload;
 
     function SubSelect(const pSelect: ISQLSelect; const pAlias: string): ISQLSelect; overload;
     function SubSelect(const pWhere: ISQLWhere; const pAlias: string): ISQLSelect; overload;
@@ -470,6 +507,22 @@ begin
       begin
         Result := AnsiReplaceText(Result, ',', '.');
       end;
+  end;
+end;
+
+function AggregateFunctionToString(const pAggFunction: TSQLAggregateFunctions): string;
+begin
+  case pAggFunction of
+    aggAvg:
+      Result := 'Avg';
+    aggCount:
+      Result := 'Count';
+    aggMax:
+      Result := 'Max';
+    aggMin:
+      Result := 'Min';
+    aggSum:
+      Result := 'Sum';
   end;
 end;
 
@@ -1000,6 +1053,34 @@ begin
   FreeAndNil(FJoinedTables);
   FreeAndNil(FUnions);
   inherited BeforeDestruction;
+end;
+
+function TSQLSelect.Column(const pColumnName: string; const pCoalesce: ISQLCoalesce; const pColumnAlias: string): ISQLSelect;
+var
+  vColumn: string;
+begin
+  if (pCoalesce <> nil) then
+    vColumn := 'Coalesce(' + pColumnName + ',' + ConvertSQLValue(pCoalesce.GetValue) +')'
+  else
+    vColumn := (pColumnName);
+
+  if (pColumnAlias <> EmptyStr) then
+    vColumn := vColumn + ' As ' + pColumnAlias;
+
+  FColumns.Add(vColumn);
+  Result := Self;
+end;
+
+function TSQLSelect.Column(const pAggregate: ISQLAggregate): ISQLSelect;
+begin
+  FColumns.Add(pAggregate.ToString);
+  Result := Self;
+end;
+
+function TSQLSelect.Column(const pAggregate: ISQLAggregate; const pCoalesce: ISQLCoalesce): ISQLSelect;
+begin
+  FColumns.Add(pAggregate.ToString(pCoalesce));
+  Result := Self;
 end;
 
 function TSQLSelect.From(const pTableName: string): ISQLSelect;
@@ -2120,6 +2201,116 @@ begin
       Result := 'Union All';
   end;
   Result := Result + sLineBreak + FUnionSQL;
+end;
+
+{ TSQLAggregate }
+
+function TSQLAggregate.AggAlias(const pAlias: string): ISQLAggregate;
+begin
+  FAlias := pAlias;
+  Result := Self;
+end;
+
+function TSQLAggregate.AggCoalesce(const pCoalesce: ISQLCoalesce): ISQLAggregate;
+begin
+  FCoalesce := pCoalesce;
+  Result := Self;
+end;
+
+function TSQLAggregate.AggExpression(const pExpression: string): ISQLAggregate;
+begin
+  FExpression := pExpression;
+  Result := Self;
+end;
+
+function TSQLAggregate.AggFunction(const pFunction: TSQLAggregateFunctions): ISQLAggregate;
+begin
+  FFunction := pFunction;
+  Result := Self;
+end;
+
+constructor TSQLAggregate.Create;
+begin
+  FFunction := aggAvg;
+  FExpression := EmptyStr;
+  FAlias := EmptyStr;
+  FCoalesce := nil;
+end;
+
+constructor TSQLAggregate.Create(const pFunction: TSQLAggregateFunctions; const pExpression, pAlias: string; const pCoalesce: ISQLCoalesce);
+begin
+  FFunction := pFunction;
+  FExpression := pExpression;
+  FAlias := pAlias;
+  FCoalesce := pCoalesce;
+end;
+
+function TSQLAggregate.GetAggAlias: string;
+begin
+  Result := FAlias;
+end;
+
+function TSQLAggregate.GetAggCoalesce: ISQLCoalesce;
+begin
+  Result := FCoalesce;
+end;
+
+function TSQLAggregate.GetAggExpression: string;
+begin
+  Result := FExpression;
+end;
+
+function TSQLAggregate.GetAggFunction: TSQLAggregateFunctions;
+begin
+  Result := FFunction;
+end;
+
+function TSQLAggregate.ToString(const pOwnerCoalesce: ISQLCoalesce): string;
+begin
+  if (GetAggCoalesce <> nil) then
+  begin
+    if (pOwnerCoalesce <> nil) then
+      Result := 'Coalesce(' + AggregateFunctionToString(GetAggFunction) +
+        '(Coalesce(' + GetAggExpression + ',' + ConvertSQLValue(GetAggCoalesce.GetValue) +')),' + ConvertSQLValue(pOwnerCoalesce.GetValue) + ')'
+    else
+      Result := AggregateFunctionToString(GetAggFunction) +
+        '(Coalesce(' + GetAggExpression + ',' + ConvertSQLValue(GetAggCoalesce.GetValue) +'))'
+  end
+  else
+  begin
+    if (pOwnerCoalesce <> nil) then
+      Result := 'Coalesce(' + AggregateFunctionToString(GetAggFunction) +
+        '(' + GetAggExpression + '),' + ConvertSQLValue(pOwnerCoalesce.GetValue) + ')'
+    else
+      Result := AggregateFunctionToString(GetAggFunction) +
+        '(' + GetAggExpression + ')';
+  end;
+
+  if (GetAggAlias <> EmptyStr) then
+    Result := Result + ' As ' + GetAggAlias;
+end;
+
+{ TSQLCoalesce }
+
+constructor TSQLCoalesce.Create;
+begin
+
+end;
+
+constructor TSQLCoalesce.Create(const pValue: TValue);
+begin
+  FValue := pValue;
+end;
+
+function TSQLCoalesce.GetValue: TValue;
+begin
+  Result := FValue;
+end;
+
+function TSQLCoalesce.Value(const pValue: TValue): ISQLCoalesce;
+begin
+  FValue := pValue;
+  Result := Self;
 end;
 
 end.
