@@ -290,6 +290,7 @@ type
   TSQLSelect = class(TInterfacedObject, ISQLSelect)
   strict private
     FStatementType: TSQLStatementType;
+    FDistinct: Boolean;
     FColumns: TStringList;
     FJoinedTables: TList<ISQLJoin>;
     FFromTable: ISQLTable;
@@ -303,6 +304,8 @@ type
     procedure BeforeDestruction; override;
 
     function GetStatementType(): TSQLStatementType;
+
+    function Distinct(): ISQLSelect;
 
     function AllColumns(): ISQLSelect;
     function Column(const pColumnName: string): ISQLSelect;
@@ -961,10 +964,17 @@ begin
   Result := Self;
 end;
 
+function TSQLSelect.Distinct: ISQLSelect;
+begin
+  FDistinct := True;
+  Result := Self;
+end;
+
 procedure TSQLSelect.AfterConstruction;
 begin
   inherited AfterConstruction;
   FStatementType := stSelect;
+  FDistinct := False;
   FColumns := TStringList.Create;
   FColumns.Delimiter := ',';
   FColumns.StrictDelimiter := True;
@@ -1133,6 +1143,9 @@ begin
   vStrBuilder := TStringBuilder.Create;
   try
     vStrBuilder.Append('Select ');
+
+    if FDistinct then
+      vStrBuilder.Append('Distinct ');
 
     for I := 0 to Pred(FColumns.Count) do
     begin

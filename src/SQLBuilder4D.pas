@@ -221,6 +221,8 @@ type
 
   ISQLSelect = interface(ISQLStatement)
     ['{80AB8C0C-A2AD-4EDC-8E05-F2F6D4D80A7A}']
+    function Distinct(): ISQLSelect;
+
     function AllColumns(): ISQLSelect;
     function Column(const pColumnName: string): ISQLSelect;
 

@@ -21,6 +21,7 @@ type
     procedure TestSQLSelect();
     procedure TestSQLSelectWhere();
     procedure TestSQLSelectUnion();
+    procedure TestSQLSelectDistinct();
     procedure TestSQLInjection();
     procedure TestSQLDelete();
     procedure TestSQLUpdate();
@@ -597,6 +598,28 @@ begin
     .From('Customers')
     .ToString;
   CheckEqualsString(cSelectSubSelect, vOut);
+end;
+
+procedure TTestSQLBuilder4D.TestSQLSelectDistinct;
+const
+  cSelect_1 =
+    'Select Distinct '
+    + sLineBreak +
+    ' C_Code, C_Name, C_Doc'
+    + sLineBreak +
+    ' From Customers';
+var
+  vOut: string;
+begin
+  vOut :=
+    TSQLBuilder.Select
+    .Distinct
+    .Column('C_Code')
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cSelect_1, vOut);
 end;
 
 procedure TTestSQLBuilder4D.TestSQLSelectUnion;
