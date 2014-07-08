@@ -11,7 +11,7 @@ unit gaAdvancedSQLParser;
 interface
 
 uses
-  Classes, gaBasicSQLParser, gaLnkList, SysUtils;
+  Classes, gaBasicSQLParser, gaLnkList, SysUtils, System.Types;
 
 type
   EgaSQLParserException = class(Exception)
