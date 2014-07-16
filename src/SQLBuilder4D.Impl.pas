@@ -615,6 +615,7 @@ end;
 function TSQLOrderBy.Sort(const pSortType: TSQLSortType): ISQLOrderBy;
 begin
   FSortType := pSortType;
+  Result := Self;
 end;
 
 function TSQLOrderBy.ToString: string;
