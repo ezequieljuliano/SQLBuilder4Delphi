@@ -125,8 +125,8 @@ type
 
     function ToString(): string; override;
 
-    function Column(const pColumnName: string): ISQLOrderBy;
-    function Columns(const pColumnNames: array of string): ISQLOrderBy;
+    function Column(const pColumnName: string; const pSortType: TSQLSortType = srNone): ISQLOrderBy;
+    function Columns(const pColumnNames: array of string; const pSortType: TSQLSortType = srNone): ISQLOrderBy;
     function Sort(const pSortType: TSQLSortType): ISQLOrderBy;
 
     function Union(const pSelect: ISQLSelect; const pType: TSQLUnionType = utUnion): ISQLOrderBy; overload;
@@ -550,19 +550,31 @@ end;
 
 { TSQLOrderBy }
 
-function TSQLOrderBy.Column(const pColumnName: string): ISQLOrderBy;
+function TSQLOrderBy.Column(const pColumnName: string; const pSortType: TSQLSortType): ISQLOrderBy;
+var
+  vOrderByColumn: string;
 begin
-  FCriterias.Add(TSQLCriteria.Create(pColumnName, ctComma));
+  case pSortType of
+    srNone:
+      vOrderByColumn := pColumnName;
+    srAsc:
+      vOrderByColumn := pColumnName + ' Asc';
+    srDesc:
+      vOrderByColumn := pColumnName + ' Desc';
+  end;
+  FCriterias.Add(TSQLCriteria.Create(vOrderByColumn, ctComma));
   Result := Self;
 end;
 
-function TSQLOrderBy.Columns(const pColumnNames: array of string): ISQLOrderBy;
+function TSQLOrderBy.Columns(const pColumnNames: array of string; const pSortType: TSQLSortType): ISQLOrderBy;
 var
   I: Integer;
 begin
   FCriterias.Clear;
   for I := low(pColumnNames) to high(pColumnNames) do
     Column(pColumnNames[I]);
+  if (pSortType <> srNone) then
+    Sort(pSortType);
   Result := Self;
 end;
 
@@ -573,6 +585,7 @@ begin
   FStatementToString := nil;
   FStatementType := stNone;
   FUnions := TList<ISQLUnion>.Create;
+  FSortType := srNone;
 end;
 
 procedure TSQLOrderBy.AppendStatementToString(const pFuncToString: TFunc<string>);
@@ -641,6 +654,15 @@ begin
         vStrBuilder.Append(FCriterias[I].GetConnectorDescription);
 
       vStrBuilder.Append(' ' + Criterias[I].Criteria);
+
+      case FSortType of
+        srAsc:
+          if not AnsiContainsStr(Criterias[I].Criteria, 'Asc') then
+            vStrBuilder.Append(' Asc');
+        srDesc:
+          if not AnsiContainsStr(Criterias[I].Criteria, 'Desc') then
+            vStrBuilder.Append(' Desc');
+      end;
     end;
 
     for I := 0 to Pred(FUnions.Count) do
@@ -1061,7 +1083,7 @@ var
   vColumn: string;
 begin
   if (pCoalesce <> nil) then
-    vColumn := 'Coalesce(' + pColumnName + ',' + ConvertSQLValue(pCoalesce.GetValue) +')'
+    vColumn := 'Coalesce(' + pColumnName + ',' + ConvertSQLValue(pCoalesce.GetValue) + ')'
   else
     vColumn := (pColumnName);
 
@@ -2272,10 +2294,10 @@ begin
   begin
     if (pOwnerCoalesce <> nil) then
       Result := 'Coalesce(' + AggregateFunctionToString(GetAggFunction) +
-        '(Coalesce(' + GetAggExpression + ',' + ConvertSQLValue(GetAggCoalesce.GetValue) +')),' + ConvertSQLValue(pOwnerCoalesce.GetValue) + ')'
+        '(Coalesce(' + GetAggExpression + ',' + ConvertSQLValue(GetAggCoalesce.GetValue) + ')),' + ConvertSQLValue(pOwnerCoalesce.GetValue) + ')'
     else
       Result := AggregateFunctionToString(GetAggFunction) +
-        '(Coalesce(' + GetAggExpression + ',' + ConvertSQLValue(GetAggCoalesce.GetValue) +'))'
+        '(Coalesce(' + GetAggExpression + ',' + ConvertSQLValue(GetAggCoalesce.GetValue) + '))'
   end
   else
   begin

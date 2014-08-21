@@ -121,8 +121,8 @@ type
     ['{9B16882D-08F9-4CA9-8E9A-9E4A0BF19C59}']
     procedure CopyOf(const pSource: ISQLOrderBy);
 
-    function Column(const pColumnName: string): ISQLOrderBy;
-    function Columns(const pColumnNames: array of string): ISQLOrderBy;
+    function Column(const pColumnName: string; const pSortType: TSQLSortType = srNone): ISQLOrderBy;
+    function Columns(const pColumnNames: array of string; const pSortType: TSQLSortType = srNone): ISQLOrderBy;
     function Sort(const pSortType: TSQLSortType): ISQLOrderBy;
 
     function Union(const pSelect: ISQLSelect; const pType: TSQLUnionType = utUnion): ISQLOrderBy; overload;
