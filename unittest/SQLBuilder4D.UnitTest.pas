@@ -20,6 +20,7 @@ type
   published
     procedure TestSQLSelect();
     procedure TestSQLSelectWhere();
+    procedure TestSQLSelectWhereCaseInSensitive();
     procedure TestSQLSelectUnion();
     procedure TestSQLSelectDistinct();
     procedure TestSQLSelectColumnCoalesce();
@@ -375,11 +376,11 @@ const
     + sLineBreak +
     '   Sum(Customers.C_Limit) as Limite  '
     + sLineBreak +
-    ','+
+    ',' +
     ' Customers.C_Test ' +
     'From Customers '
     + sLineBreak +
-    ','+
+    ',' +
     ' Customers S ' +
     'Inner Join Places On (Customers.P_Code = Places.P_Code) '
     + sLineBreak +
@@ -397,7 +398,7 @@ const
     + sLineBreak +
     '     Customers.C_Doc '
     + sLineBreak +
-    ','+
+    ',' +
     ' Customers.C_Value ' +
     'having ' +
     '(Customers.C_Cod > 0) '
@@ -1170,6 +1171,149 @@ begin
     .Where('C_Code').Equal(1)
     ._Or(
     TSQLBuilder.Where.Column('C_Code').Equal(2)._And('C_Name').Different('Juliano')
+    )
+    .GroupBy(['C_Code', 'C_Name'])
+    .Having(['(C_Code > 0)'])
+    .OrderBy(['C_Code', 'C_Doc'])
+    .ToString;
+  CheckEqualsString(cExpected_5, vOut);
+end;
+
+procedure TTestSQLBuilder4D.TestSQLSelectWhereCaseInSensitive;
+const
+  cExpected_1 =
+    'Select '
+    + sLineBreak +
+    ' C_Code, C_Name, C_Doc'
+    + sLineBreak +
+    ' From Customers'
+    + sLineBreak +
+    ' Where (C_Code = 1) And (Upper(C_Name) <> Upper(''Ezequiel''))';
+
+  cExpected_2 =
+    'Select '
+    + sLineBreak +
+    ' C_Code, C_Name, C_Doc'
+    + sLineBreak +
+    ' From Customers'
+    + sLineBreak +
+    ' Where (C_Code = 1) And ((C_Code = 2) And (Upper(C_Name) <> Upper(''Juliano'')))';
+
+  cExpected_3 =
+    'Select '
+    + sLineBreak +
+    ' C_Code, C_Name, C_Doc'
+    + sLineBreak +
+    ' From Customers'
+    + sLineBreak +
+    ' Where (C_Code = 1) Or ((C_Code = 2) And (Upper(C_Name) <> Upper(''Juliano'')))';
+
+  cExpected_4 =
+    'Select '
+    + sLineBreak +
+    ' C_Code, C_Name, C_Doc'
+    + sLineBreak +
+    ' From Customers'
+    + sLineBreak +
+    ' Where (C_Code = 1) Or ((C_Code = 2) And (Upper(C_Name) <> Upper(''Juliano'')) Or (C_Code < 5))' +
+    ' And (C_Code > 0) And (C_Code < 0) And (C_Code >= 0) Or (C_Code <= 0)' +
+    ' And (Upper(C_Name) Like Upper(''%Ejm%'')) Or (Upper(C_Name) Like Upper(''%Ejm'')) Or (Upper(C_Name) Like Upper(''Ejm%''))' +
+    ' Or (Upper(C_Name) Not Like Upper(''%Ejm%'')) Or (Upper(C_Name) Not Like Upper(''%Ejm'')) Or (Upper(C_Name) Not Like Upper(''Ejm%''))' +
+    ' And (C_Doc Is Null) Or (C_Name Is Not Null)' +
+    ' Or (C_Code In (1, 2, 3)) And (C_Date Between ''01.01.2013'' And ''01.01.2013'')';
+
+  cExpected_5 =
+    'Select '
+    + sLineBreak +
+    ' C_Code, C_Name, C_Doc'
+    + sLineBreak +
+    ' From Customers'
+    + sLineBreak +
+    ' Where (C_Code = 1) Or ((C_Code = 2) And (Upper(C_Name) <> Upper(''Juliano'')))'
+    + sLineBreak +
+    ' Group By C_Code, C_Name'
+    + sLineBreak +
+    ' Having ((C_Code > 0))'
+    + sLineBreak +
+    ' Order By C_Code, C_Doc';
+var
+  vOut: string;
+begin
+  vOut :=
+    TSQLBuilder.Select
+    .Column('C_Code')
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .Where('C_Code').Equal(1)
+    ._And('C_Name').Different('Ezequiel', False)
+    .ToString;
+  CheckEqualsString(cExpected_1, vOut);
+
+  vOut :=
+    TSQLBuilder.Select
+    .Column('C_Code')
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .Where('C_Code').Equal(1)
+    ._And(
+    TSQLBuilder.Where.Column('C_Code').Equal(2)._And('C_Name').Different('Juliano', False)
+    )
+    .ToString;
+  CheckEqualsString(cExpected_2, vOut);
+
+  vOut :=
+    TSQLBuilder.Select
+    .Column('C_Code')
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .Where('C_Code').Equal(1)
+    ._Or(
+    TSQLBuilder.Where.Column('C_Code').Equal(2)._And('C_Name').Different('Juliano', False)
+    )
+    .ToString;
+  CheckEqualsString(cExpected_3, vOut);
+
+  vOut :=
+    TSQLBuilder.Select
+    .Column('C_Code')
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .Where('C_Code').Equal(1)
+    ._Or(
+    TSQLBuilder.Where.Column('C_Code').Equal(2)
+    ._And('C_Name').Different('Juliano', False)
+    ._Or('C_Code').Less(5)
+    )
+    ._And('C_Code').Greater(0)
+    ._And('C_Code').Less(0)
+    ._And('C_Code').GreaterOrEqual(0)
+    ._Or('C_Code').LessOrEqual(0)
+    ._And('C_Name').Like('Ejm', False, loContaining)
+    ._Or('C_Name').Like('Ejm', False, loEnding)
+    ._Or('C_Name').Like('Ejm', False, loStarting)
+    ._Or('C_Name').NotLike('Ejm', False, loContaining)
+    ._Or('C_Name').NotLike('Ejm', False, loEnding)
+    ._Or('C_Name').NotLike('Ejm', False, loStarting)
+    ._And('C_Doc').IsNull
+    ._Or('C_Name').IsNotNull
+    ._Or('C_Code').InList([1, 2, 3])
+    ._And('C_Date').Between('01.01.2013', '01.01.2013')
+    .ToString;
+  CheckEqualsString(cExpected_4, vOut);
+
+  vOut :=
+    TSQLBuilder.Select
+    .Column('C_Code')
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .Where('C_Code').Equal(1)
+    ._Or(
+    TSQLBuilder.Where.Column('C_Code').Equal(2)._And('C_Name').Different('Juliano', False)
     )
     .GroupBy(['C_Code', 'C_Name'])
     .Having(['(C_Code > 0)'])

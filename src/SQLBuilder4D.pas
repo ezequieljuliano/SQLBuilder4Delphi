@@ -184,14 +184,23 @@ type
     function _Or(const pColumnName: string): ISQLWhere; overload;
     function _Or(const pWhere: ISQLWhere): ISQLWhere; overload;
 
-    function Equal(const pValue: TValue): ISQLWhere;
-    function Different(const pValue: TValue): ISQLWhere;
+    function Equal(const pValue: TValue): ISQLWhere; overload;
+    function Equal(const pValue: string; const pCaseSensitive: Boolean): ISQLWhere; overload;
+
+    function Different(const pValue: TValue): ISQLWhere; overload;
+    function Different(const pValue: string; const pCaseSensitive: Boolean): ISQLWhere; overload;
+
     function Greater(const pValue: TValue): ISQLWhere;
     function Less(const pValue: TValue): ISQLWhere;
     function GreaterOrEqual(const pValue: TValue): ISQLWhere;
     function LessOrEqual(const pValue: TValue): ISQLWhere;
-    function Like(const pValue: string; const pOperator: TSQLLikeType = loEqual): ISQLWhere;
-    function NotLike(const pValue: string; const pOperator: TSQLLikeType = loEqual): ISQLWhere;
+
+    function Like(const pValue: string; const pOperator: TSQLLikeType = loEqual): ISQLWhere; overload;
+    function Like(const pValue: string; const pCaseSensitive: Boolean; const pOperator: TSQLLikeType = loEqual): ISQLWhere; overload;
+
+    function NotLike(const pValue: string; const pOperator: TSQLLikeType = loEqual): ISQLWhere; overload;
+    function NotLike(const pValue: string; const pCaseSensitive: Boolean; const pOperator: TSQLLikeType = loEqual): ISQLWhere; overload;
+
     function IsNull(): ISQLWhere;
     function IsNotNull(): ISQLWhere;
     function InList(const pValues: array of TValue): ISQLWhere;

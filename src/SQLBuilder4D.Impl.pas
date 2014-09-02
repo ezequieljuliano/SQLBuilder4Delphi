@@ -229,6 +229,8 @@ type
     FOrderBy: ISQLOrderBy;
     FUnions: TList<ISQLUnion>;
     procedure InternalAddUnion(const pUnionSQL: string; const pUnionType: TSQLUnionType);
+    procedure InternalAddBasicCriteria(const pSQLOperator: string; const pSQLValue: TValue; const pCaseSensitive: Boolean);
+    procedure InternalAddLikeCriteria(const pSQLOperator, pSQLValue: string; const pLikeOperator: TSQLLikeType; const pCaseSensitive: Boolean);
   public
     procedure AfterConstruction; override;
     procedure BeforeDestruction; override;
@@ -250,14 +252,23 @@ type
     function _Or(const pColumnName: string): ISQLWhere; overload;
     function _Or(const pWhere: ISQLWhere): ISQLWhere; overload;
 
-    function Equal(const pValue: TValue): ISQLWhere;
-    function Different(const pValue: TValue): ISQLWhere;
+    function Equal(const pValue: TValue): ISQLWhere; overload;
+    function Equal(const pValue: string; const pCaseSensitive: Boolean): ISQLWhere; overload;
+
+    function Different(const pValue: TValue): ISQLWhere; overload;
+    function Different(const pValue: string; const pCaseSensitive: Boolean): ISQLWhere; overload;
+
     function Greater(const pValue: TValue): ISQLWhere;
     function Less(const pValue: TValue): ISQLWhere;
     function GreaterOrEqual(const pValue: TValue): ISQLWhere;
     function LessOrEqual(const pValue: TValue): ISQLWhere;
-    function Like(const pValue: string; const pOperator: TSQLLikeType = loEqual): ISQLWhere;
-    function NotLike(const pValue: string; const pOperator: TSQLLikeType = loEqual): ISQLWhere;
+
+    function Like(const pValue: string; const pOperator: TSQLLikeType = loEqual): ISQLWhere; overload;
+    function Like(const pValue: string; const pCaseSensitive: Boolean; const pOperator: TSQLLikeType = loEqual): ISQLWhere; overload;
+
+    function NotLike(const pValue: string; const pOperator: TSQLLikeType = loEqual): ISQLWhere; overload;
+    function NotLike(const pValue: string; const pCaseSensitive: Boolean; const pOperator: TSQLLikeType = loEqual): ISQLWhere; overload;
+
     function IsNull(): ISQLWhere;
     function IsNotNull(): ISQLWhere;
     function InList(const pValues: array of TValue): ISQLWhere;
@@ -469,7 +480,7 @@ procedure ValidateSQLReservedWord(const pValue: string);
   function GetWords(): TArray<string>;
   begin
     Result := TArray<string>.Create('or', 'and', 'between', 'is', 'not', 'null', 'in', 'like', 'select', 'union', 'inner', 'join', 'right', 'full',
-      'first', 'insert', 'update', 'delete');
+      'first', 'insert', 'update', 'delete', 'upper', 'lower');
   end;
 
 var
@@ -1471,25 +1482,27 @@ begin
   Result := Self;
 end;
 
+function TSQLWhere.Different(const pValue: string; const pCaseSensitive: Boolean): ISQLWhere;
+begin
+  InternalAddBasicCriteria(_cSQLOperator[opDifferent], pValue, pCaseSensitive);
+  Result := Self;
+end;
+
 function TSQLWhere.Different(const pValue: TValue): ISQLWhere;
 begin
-  ColumnIsValid(FColumnName);
+  InternalAddBasicCriteria(_cSQLOperator[opDifferent], pValue, True);
+  Result := Self;
+end;
 
-  FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[opDifferent] + ' ' + ConvertSQLValue(pValue) + ')', FConnectorType));
-
-  FConnectorType := ctAnd;
-  FColumnName := EmptyStr;
+function TSQLWhere.Equal(const pValue: string; const pCaseSensitive: Boolean): ISQLWhere;
+begin
+  InternalAddBasicCriteria(_cSQLOperator[opEqual], pValue, pCaseSensitive);
   Result := Self;
 end;
 
 function TSQLWhere.Equal(const pValue: TValue): ISQLWhere;
 begin
-  ColumnIsValid(FColumnName);
-
-  FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[opEqual] + ' ' + ConvertSQLValue(pValue) + ')', FConnectorType));
-
-  FConnectorType := ctAnd;
-  FColumnName := EmptyStr;
+  InternalAddBasicCriteria(_cSQLOperator[opEqual], pValue, True);
   Result := Self;
 end;
 
@@ -1500,24 +1513,13 @@ end;
 
 function TSQLWhere.Greater(const pValue: TValue): ISQLWhere;
 begin
-  ColumnIsValid(FColumnName);
-
-  FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[opGreater] + ' ' + ConvertSQLValue(pValue) + ')', FConnectorType));
-
-  FConnectorType := ctAnd;
-  FColumnName := EmptyStr;
+  InternalAddBasicCriteria(_cSQLOperator[opGreater], pValue, True);
   Result := Self;
 end;
 
 function TSQLWhere.GreaterOrEqual(const pValue: TValue): ISQLWhere;
 begin
-  ColumnIsValid(FColumnName);
-
-  FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[opGreaterOrEqual] + ' ' + ConvertSQLValue(pValue) + ')',
-    FConnectorType));
-
-  FConnectorType := ctAnd;
-  FColumnName := EmptyStr;
+  InternalAddBasicCriteria(_cSQLOperator[opGreaterOrEqual], pValue, True);
   Result := Self;
 end;
 
@@ -1596,6 +1598,49 @@ begin
   Result := Self;
 end;
 
+procedure TSQLWhere.InternalAddBasicCriteria(const pSQLOperator: string; const pSQLValue: TValue; const pCaseSensitive: Boolean);
+begin
+  ColumnIsValid(FColumnName);
+
+  if pCaseSensitive then
+    FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' +
+      pSQLOperator + ' ' + ConvertSQLValue(pSQLValue) + ')', FConnectorType))
+  else
+    FCriterias.Add(TSQLCriteria.Create('(Upper(' + FColumnName + ') ' +
+      pSQLOperator + ' Upper(' + ConvertSQLValue(pSQLValue) + '))', FConnectorType));
+
+  FConnectorType := ctAnd;
+  FColumnName := EmptyStr;
+end;
+
+procedure TSQLWhere.InternalAddLikeCriteria(const pSQLOperator, pSQLValue: string; const pLikeOperator: TSQLLikeType; const pCaseSensitive: Boolean);
+var
+  vValue: string;
+begin
+  ColumnIsValid(FColumnName);
+
+  ValidateSQLReservedWord(pSQLValue);
+
+  case pLikeOperator of
+    loEqual:
+      vValue := QuotedStr(pSQLValue);
+    loStarting:
+      vValue := QuotedStr(pSQLValue + '%');
+    loEnding:
+      vValue := QuotedStr('%' + pSQLValue);
+    loContaining:
+      vValue := QuotedStr('%' + pSQLValue + '%');
+  end;
+
+  if pCaseSensitive then
+    FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' + pSQLOperator + ' ' + vValue + ')', FConnectorType))
+  else
+    FCriterias.Add(TSQLCriteria.Create('(Upper(' + FColumnName + ') ' + pSQLOperator + ' Upper(' + vValue + '))', FConnectorType));
+
+  FConnectorType := ctAnd;
+  FColumnName := EmptyStr;
+end;
+
 procedure TSQLWhere.InternalAddUnion(const pUnionSQL: string; const pUnionType: TSQLUnionType);
 begin
   if (FStatementType = stSelect) then
@@ -1626,75 +1671,37 @@ end;
 
 function TSQLWhere.Less(const pValue: TValue): ISQLWhere;
 begin
-  ColumnIsValid(FColumnName);
-
-  FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[opLess] + ' ' + ConvertSQLValue(pValue) + ')', FConnectorType));
-
-  FConnectorType := ctAnd;
-  FColumnName := EmptyStr;
+  InternalAddBasicCriteria(_cSQLOperator[opLess], pValue, True);
   Result := Self;
 end;
 
 function TSQLWhere.LessOrEqual(const pValue: TValue): ISQLWhere;
 begin
-  ColumnIsValid(FColumnName);
+  InternalAddBasicCriteria(_cSQLOperator[opLessOrEqual], pValue, True);
+  Result := Self;
+end;
 
-  FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[opLessOrEqual] + ' ' + ConvertSQLValue(pValue) + ')', FConnectorType));
-
-  FConnectorType := ctAnd;
-  FColumnName := EmptyStr;
+function TSQLWhere.Like(const pValue: string; const pCaseSensitive: Boolean; const pOperator: TSQLLikeType): ISQLWhere;
+begin
+  InternalAddLikeCriteria(_cSQLOperator[opLike], pValue, pOperator, pCaseSensitive);
   Result := Self;
 end;
 
 function TSQLWhere.Like(const pValue: string; const pOperator: TSQLLikeType): ISQLWhere;
-var
-  vValue: string;
 begin
-  ColumnIsValid(FColumnName);
+  InternalAddLikeCriteria(_cSQLOperator[opLike], pValue, pOperator, True);
+  Result := Self;
+end;
 
-  ValidateSQLReservedWord(pValue);
-
-  case pOperator of
-    loEqual:
-      vValue := QuotedStr(pValue);
-    loStarting:
-      vValue := QuotedStr(pValue + '%');
-    loEnding:
-      vValue := QuotedStr('%' + pValue);
-    loContaining:
-      vValue := QuotedStr('%' + pValue + '%');
-  end;
-
-  FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[opLike] + ' ' + vValue + ')', FConnectorType));
-
-  FConnectorType := ctAnd;
-  FColumnName := EmptyStr;
+function TSQLWhere.NotLike(const pValue: string; const pCaseSensitive: Boolean; const pOperator: TSQLLikeType): ISQLWhere;
+begin
+  InternalAddLikeCriteria(_cSQLOperator[opNotLike], pValue, pOperator, pCaseSensitive);
   Result := Self;
 end;
 
 function TSQLWhere.NotLike(const pValue: string; const pOperator: TSQLLikeType): ISQLWhere;
-var
-  vValue: string;
 begin
-  ColumnIsValid(FColumnName);
-
-  ValidateSQLReservedWord(pValue);
-
-  case pOperator of
-    loEqual:
-      vValue := QuotedStr(pValue);
-    loStarting:
-      vValue := QuotedStr(pValue + '%');
-    loEnding:
-      vValue := QuotedStr('%' + pValue);
-    loContaining:
-      vValue := QuotedStr('%' + pValue + '%');
-  end;
-
-  FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[opNotLike] + ' ' + vValue + ')', FConnectorType));
-
-  FConnectorType := ctAnd;
-  FColumnName := EmptyStr;
+  InternalAddLikeCriteria(_cSQLOperator[opNotLike], pValue, pOperator, True);
   Result := Self;
 end;
 

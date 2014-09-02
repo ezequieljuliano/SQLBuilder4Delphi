@@ -10,3 +10,4 @@
 /unittest/__history
 /dependencies/gaSQLParser/src/__history
 /unittest/*.dsk
+/unittest/SQLBuilder4DTests.~dsk
