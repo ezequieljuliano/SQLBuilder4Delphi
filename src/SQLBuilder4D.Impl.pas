@@ -104,14 +104,13 @@ type
     property Connector: TSQLConnectorType read GetConnector write SetConnector;
   end;
 
-  TSQLOrderBy = class(TInterfacedObject, ISQLOrderBy)
+  TSQLClause = class(TInterfacedObject, ISQLClause)
   strict private
     FCriterias: TList<ISQLCriteria>;
-    FStatementToString: TFunc<string>;
     FStatementType: TSQLStatementType;
-    FSortType: TSQLSortType;
-    FUnions: TList<ISQLUnion>;
-    procedure InternalAddUnion(const pUnionSQL: string; const pUnionType: TSQLUnionType);
+  strict protected
+    FStatementToString: TFunc<string>;
+    function GetStatementType(): TSQLStatementType;
   public
     procedure AfterConstruction; override;
     procedure BeforeDestruction; override;
@@ -120,6 +119,21 @@ type
 
     procedure AppendStatementToString(const pFuncToString: TFunc<string>);
     procedure AppendStatementType(const pStatementType: TSQLStatementType);
+
+    function ToString(): string; reintroduce; virtual;
+    procedure SaveToFile(const pFileName: string);
+
+    property Criterias: TList<ISQLCriteria> read GetCriterias;
+  end;
+
+  TSQLOrderBy = class(TSQLClause, ISQLOrderBy)
+  strict private
+    FSortType: TSQLSortType;
+    FUnions: TList<ISQLUnion>;
+    procedure InternalAddUnion(const pUnionSQL: string; const pUnionType: TSQLUnionType);
+  public
+    procedure AfterConstruction; override;
+    procedure BeforeDestruction; override;
 
     procedure CopyOf(const pSource: ISQLOrderBy);
 
@@ -134,26 +148,16 @@ type
     function Union(const pGroupBy: ISQLGroupBy; const pType: TSQLUnionType = utUnion): ISQLOrderBy; overload;
     function Union(const pHaving: ISQLHaving; const pType: TSQLUnionType = utUnion): ISQLOrderBy; overload;
     function Union(const pOrderBy: ISQLOrderBy; const pType: TSQLUnionType = utUnion): ISQLOrderBy; overload;
-
-    property Criterias: TList<ISQLCriteria> read GetCriterias;
   end;
 
-  TSQLHaving = class(TInterfacedObject, ISQLHaving)
+  TSQLHaving = class(TSQLClause, ISQLHaving)
   strict private
-    FCriterias: TList<ISQLCriteria>;
-    FStatementToString: TFunc<string>;
-    FStatementType: TSQLStatementType;
     FOrderBy: ISQLOrderBy;
     FUnions: TList<ISQLUnion>;
     procedure InternalAddUnion(const pUnionSQL: string; const pUnionType: TSQLUnionType);
   public
     procedure AfterConstruction; override;
     procedure BeforeDestruction; override;
-
-    function GetCriterias(): TList<ISQLCriteria>;
-
-    procedure AppendStatementToString(const pFuncToString: TFunc<string>);
-    procedure AppendStatementType(const pStatementType: TSQLStatementType);
 
     procedure CopyOf(const pSource: ISQLHaving);
 
@@ -171,15 +175,10 @@ type
     function Union(const pGroupBy: ISQLGroupBy; const pType: TSQLUnionType = utUnion): ISQLHaving; overload;
     function Union(const pHaving: ISQLHaving; const pType: TSQLUnionType = utUnion): ISQLHaving; overload;
     function Union(const pOrderBy: ISQLOrderBy; const pType: TSQLUnionType = utUnion): ISQLHaving; overload;
-
-    property Criterias: TList<ISQLCriteria> read GetCriterias;
   end;
 
-  TSQLGroupBy = class(TInterfacedObject, ISQLGroupBy)
+  TSQLGroupBy = class(TSQLClause, ISQLGroupBy)
   strict private
-    FCriterias: TList<ISQLCriteria>;
-    FStatementToString: TFunc<string>;
-    FStatementType: TSQLStatementType;
     FOrderBy: ISQLOrderBy;
     FHaving: ISQLHaving;
     FUnions: TList<ISQLUnion>;
@@ -187,11 +186,6 @@ type
   public
     procedure AfterConstruction; override;
     procedure BeforeDestruction; override;
-
-    function GetCriterias(): TList<ISQLCriteria>;
-
-    procedure AppendStatementToString(const pFuncToString: TFunc<string>);
-    procedure AppendStatementType(const pStatementType: TSQLStatementType);
 
     procedure CopyOf(const pSource: ISQLGroupBy);
 
@@ -213,15 +207,10 @@ type
     function Union(const pGroupBy: ISQLGroupBy; const pType: TSQLUnionType = utUnion): ISQLGroupBy; overload;
     function Union(const pHaving: ISQLHaving; const pType: TSQLUnionType = utUnion): ISQLGroupBy; overload;
     function Union(const pOrderBy: ISQLOrderBy; const pType: TSQLUnionType = utUnion): ISQLGroupBy; overload;
-
-    property Criterias: TList<ISQLCriteria> read GetCriterias;
   end;
 
-  TSQLWhere = class(TInterfacedObject, ISQLWhere)
+  TSQLWhere = class(TSQLClause, ISQLWhere)
   strict private
-    FCriterias: TList<ISQLCriteria>;
-    FStatementToString: TFunc<string>;
-    FStatementType: TSQLStatementType;
     FColumnName: string;
     FConnectorType: TSQLConnectorType;
     FGroupBy: ISQLGroupBy;
@@ -234,11 +223,6 @@ type
   public
     procedure AfterConstruction; override;
     procedure BeforeDestruction; override;
-
-    function GetCriterias(): TList<ISQLCriteria>;
-
-    procedure AppendStatementToString(const pFuncToString: TFunc<string>);
-    procedure AppendStatementType(const pStatementType: TSQLStatementType);
 
     procedure CopyOf(const pSource: ISQLWhere);
 
@@ -294,8 +278,6 @@ type
     function Union(const pGroupBy: ISQLGroupBy; const pType: TSQLUnionType = utUnion): ISQLWhere; overload;
     function Union(const pHaving: ISQLHaving; const pType: TSQLUnionType = utUnion): ISQLWhere; overload;
     function Union(const pOrderBy: ISQLOrderBy; const pType: TSQLUnionType = utUnion): ISQLWhere; overload;
-
-    property Criterias: TList<ISQLCriteria> read GetCriterias;
   end;
 
   TSQLCoalesce = class(TInterfacedObject, ISQLCoalesce)
@@ -329,12 +311,27 @@ type
     function GetAggAlias(): string;
     function GetAggCoalesce(): ISQLCoalesce;
 
-    function ToString(const pOwnerCoalesce: ISQLCoalesce = nil): string;
+    function ToString(const pOwnerCoalesce: ISQLCoalesce = nil): string; reintroduce;
   end;
 
-  TSQLSelect = class(TInterfacedObject, ISQLSelect)
+  TSQLStatement = class(TInterfacedObject, ISQLStatement)
   strict private
     FStatementType: TSQLStatementType;
+  strict protected
+    procedure SetStatementType(const pStatementType: TSQLStatementType);
+  public
+    procedure AfterConstruction; override;
+
+    function GetStatementType(): TSQLStatementType;
+
+    function ToString(): string; reintroduce; virtual;
+    procedure SaveToFile(const pFileName: string);
+
+    property StatementType: TSQLStatementType read GetStatementType;
+  end;
+
+  TSQLSelect = class(TSQLStatement, ISQLSelect)
+  strict private
     FDistinct: Boolean;
     FColumns: TStringList;
     FJoinedTables: TList<ISQLJoin>;
@@ -347,8 +344,6 @@ type
   public
     procedure AfterConstruction; override;
     procedure BeforeDestruction; override;
-
-    function GetStatementType(): TSQLStatementType;
 
     function Distinct(): ISQLSelect;
 
@@ -392,20 +387,15 @@ type
     function OrderBy(const pOrderBy: ISQLOrderBy): ISQLOrderBy; overload;
 
     function ToString(): string; override;
-
-    property StatementType: TSQLStatementType read GetStatementType;
   end;
 
-  TSQLDelete = class(TInterfacedObject, ISQLDelete)
+  TSQLDelete = class(TSQLStatement, ISQLDelete)
   strict private
-    FStatementType: TSQLStatementType;
     FTable: ISQLTable;
     FWhere: ISQLWhere;
   public
     procedure AfterConstruction; override;
     procedure BeforeDestruction; override;
-
-    function GetStatementType(): TSQLStatementType;
 
     function ToString(): string; override;
 
@@ -414,13 +404,10 @@ type
     function Where(): ISQLWhere; overload;
     function Where(const pColumnName: string): ISQLWhere; overload;
     function Where(const pWhere: ISQLWhere): ISQLWhere; overload;
-
-    property StatementType: TSQLStatementType read GetStatementType;
   end;
 
-  TSQLUpdate = class(TInterfacedObject, ISQLUpdate)
+  TSQLUpdate = class(TSQLStatement, ISQLUpdate)
   strict private
-    FStatementType: TSQLStatementType;
     FColumns: TStringList;
     FValues: TList<ISQLValue>;
     FTable: ISQLTable;
@@ -428,8 +415,6 @@ type
   public
     procedure AfterConstruction; override;
     procedure BeforeDestruction; override;
-
-    function GetStatementType(): TSQLStatementType;
 
     function ToString(): string; override;
 
@@ -441,13 +426,10 @@ type
     function Where(): ISQLWhere; overload;
     function Where(const pColumnName: string): ISQLWhere; overload;
     function Where(const pWhere: ISQLWhere): ISQLWhere; overload;
-
-    property StatementType: TSQLStatementType read GetStatementType;
   end;
 
-  TSQLInsert = class(TInterfacedObject, ISQLInsert)
+  TSQLInsert = class(TSQLStatement, ISQLInsert)
   strict private
-    FStatementType: TSQLStatementType;
     FColumns: TStringList;
     FValues: TList<ISQLValue>;
     FTable: ISQLTable;
@@ -455,16 +437,12 @@ type
     procedure AfterConstruction; override;
     procedure BeforeDestruction; override;
 
-    function GetStatementType(): TSQLStatementType;
-
     function ToString(): string; override;
 
     function Into(const pTableName: string): ISQLInsert;
     function ColumnValue(const pColumnName: string; const pValue: TValue): ISQLInsert;
     function Columns(const pColumnNames: array of string): ISQLInsert;
     function Values(const pValues: array of TValue): ISQLInsert;
-
-    property StatementType: TSQLStatementType read GetStatementType;
   end;
 
 implementation
@@ -537,6 +515,25 @@ begin
   end;
 end;
 
+procedure SaveSQLToFile(const pFileName: string; const pSQL: string);
+var
+  vStringList: TStringList;
+begin
+  if FileExists(pFileName) then
+    DeleteFile(pFileName);
+
+  vStringList := TStringList.Create;
+  try
+    vStringList.Text := pSQL;
+    vStringList.SaveToFile(pFileName);
+
+    if not FileExists(pFileName) then
+      raise ESQLBuilderException.Create('Could not save the file!');
+  finally
+    FreeAndNil(vStringList);
+  end;
+end;
+
 { TSQLTable }
 
 constructor TSQLTable.Create(const pTableName: string);
@@ -573,7 +570,7 @@ begin
     srDesc:
       vOrderByColumn := pColumnName + ' Desc';
   end;
-  FCriterias.Add(TSQLCriteria.Create(vOrderByColumn, ctComma));
+  GetCriterias.Add(TSQLCriteria.Create(vOrderByColumn, ctComma));
   Result := Self;
 end;
 
@@ -581,7 +578,7 @@ function TSQLOrderBy.Columns(const pColumnNames: array of string; const pSortTyp
 var
   I: Integer;
 begin
-  FCriterias.Clear;
+  GetCriterias.Clear;
   for I := low(pColumnNames) to high(pColumnNames) do
     Column(pColumnNames[I]);
   if (pSortType <> srNone) then
@@ -592,26 +589,12 @@ end;
 procedure TSQLOrderBy.AfterConstruction;
 begin
   inherited AfterConstruction;
-  FCriterias := TList<ISQLCriteria>.Create;
-  FStatementToString := nil;
-  FStatementType := stNone;
   FUnions := TList<ISQLUnion>.Create;
   FSortType := srNone;
 end;
 
-procedure TSQLOrderBy.AppendStatementToString(const pFuncToString: TFunc<string>);
-begin
-  FStatementToString := pFuncToString;
-end;
-
-procedure TSQLOrderBy.AppendStatementType(const pStatementType: TSQLStatementType);
-begin
-  FStatementType := pStatementType;
-end;
-
 procedure TSQLOrderBy.BeforeDestruction;
 begin
-  FreeAndNil(FCriterias);
   FreeAndNil(FUnions);
   inherited BeforeDestruction;
 end;
@@ -620,19 +603,14 @@ procedure TSQLOrderBy.CopyOf(const pSource: ISQLOrderBy);
 var
   I: Integer;
 begin
-  FCriterias.Clear;
+  GetCriterias.Clear;
   for I := 0 to Pred(pSource.Criterias.Count) do
-    FCriterias.Add(pSource.Criterias[I]);
-end;
-
-function TSQLOrderBy.GetCriterias: TList<ISQLCriteria>;
-begin
-  Result := FCriterias;
+    GetCriterias.Add(pSource.Criterias[I]);
 end;
 
 procedure TSQLOrderBy.InternalAddUnion(const pUnionSQL: string; const pUnionType: TSQLUnionType);
 begin
-  if (FStatementType = stSelect) then
+  if (GetStatementType = stSelect) then
     FUnions.Add(TSQLUnion.Create(pUnionType, pUnionSQL));
 end;
 
@@ -657,12 +635,12 @@ begin
       vStrBuilder.AppendLine;
     end;
 
-    for I := 0 to Pred(FCriterias.Count) do
+    for I := 0 to Pred(GetCriterias.Count) do
     begin
       if I = 0 then
         vStrBuilder.Append(' Order By')
       else
-        vStrBuilder.Append(FCriterias[I].GetConnectorDescription);
+        vStrBuilder.Append(GetCriterias[I].GetConnectorDescription);
 
       vStrBuilder.Append(' ' + Criterias[I].Criteria);
 
@@ -719,16 +697,13 @@ end;
 
 function TSQLHaving.Aggregate(const pHavingCriteria: string): ISQLHaving;
 begin
-  FCriterias.Add(TSQLCriteria.Create(pHavingCriteria, ctAnd));
+  GetCriterias.Add(TSQLCriteria.Create(pHavingCriteria, ctAnd));
   Result := Self;
 end;
 
 procedure TSQLHaving.AfterConstruction;
 begin
   inherited AfterConstruction;
-  FCriterias := TList<ISQLCriteria>.Create;
-  FStatementToString := nil;
-  FStatementType := stNone;
   FOrderBy := TSQLOrderBy.Create;
   FUnions := TList<ISQLUnion>.Create;
 end;
@@ -737,25 +712,14 @@ function TSQLHaving.Aggregate(const pHavingCriterias: array of string): ISQLHavi
 var
   I: Integer;
 begin
-  FCriterias.Clear;
+  GetCriterias.Clear;
   for I := low(pHavingCriterias) to high(pHavingCriterias) do
     Aggregate(pHavingCriterias[I]);
   Result := Self;
 end;
 
-procedure TSQLHaving.AppendStatementToString(const pFuncToString: TFunc<string>);
-begin
-  FStatementToString := pFuncToString;
-end;
-
-procedure TSQLHaving.AppendStatementType(const pStatementType: TSQLStatementType);
-begin
-  FStatementType := pStatementType;
-end;
-
 procedure TSQLHaving.BeforeDestruction;
 begin
-  FreeAndNil(FCriterias);
   FreeAndNil(FUnions);
   inherited BeforeDestruction;
 end;
@@ -764,33 +728,28 @@ procedure TSQLHaving.CopyOf(const pSource: ISQLHaving);
 var
   I: Integer;
 begin
-  FCriterias.Clear;
+  GetCriterias.Clear;
   for I := 0 to Pred(pSource.Criterias.Count) do
-    FCriterias.Add(pSource.Criterias[I]);
-end;
-
-function TSQLHaving.GetCriterias: TList<ISQLCriteria>;
-begin
-  Result := FCriterias;
+    GetCriterias.Add(pSource.Criterias[I]);
 end;
 
 procedure TSQLHaving.InternalAddUnion(const pUnionSQL: string; const pUnionType: TSQLUnionType);
 begin
-  if (FStatementType = stSelect) then
+  if (GetStatementType = stSelect) then
     FUnions.Add(TSQLUnion.Create(pUnionType, pUnionSQL));
 end;
 
 function TSQLHaving.OrderBy: ISQLOrderBy;
 begin
   FOrderBy.AppendStatementToString(Self.ToString);
-  FOrderBy.AppendStatementType(Self.FStatementType);
+  FOrderBy.AppendStatementType(Self.GetStatementType);
   Result := FOrderBy;
 end;
 
 function TSQLHaving.OrderBy(const pOrderBy: ISQLOrderBy): ISQLOrderBy;
 begin
   FOrderBy.AppendStatementToString(Self.ToString);
-  FOrderBy.AppendStatementType(Self.FStatementType);
+  FOrderBy.AppendStatementType(Self.GetStatementType);
   FOrderBy.CopyOf(pOrderBy);
   Result := FOrderBy;
 end;
@@ -810,14 +769,14 @@ begin
       vStrBuilder.AppendLine;
     end;
 
-    for I := 0 to Pred(FCriterias.Count) do
+    for I := 0 to Pred(GetCriterias.Count) do
     begin
       if I = 0 then
         vStrBuilder.Append(' Having ')
       else
-        vStrBuilder.Append(' ' + FCriterias[I].GetConnectorDescription + ' ');
+        vStrBuilder.Append(' ' + GetCriterias[I].GetConnectorDescription + ' ');
 
-      vStrBuilder.AppendFormat('(%0:S)', [FCriterias[I].Criteria]);
+      vStrBuilder.AppendFormat('(%0:S)', [GetCriterias[I].Criteria]);
     end;
 
     for I := 0 to Pred(FUnions.Count) do
@@ -862,7 +821,7 @@ end;
 function TSQLHaving.OrderBy(const pColumnNames: array of string): ISQLOrderBy;
 begin
   FOrderBy.AppendStatementToString(Self.ToString);
-  FOrderBy.AppendStatementType(Self.FStatementType);
+  FOrderBy.AppendStatementType(Self.GetStatementType);
   FOrderBy.Columns(pColumnNames);
   Result := FOrderBy;
 end;
@@ -871,7 +830,7 @@ end;
 
 function TSQLGroupBy.Column(const pColumnName: string): ISQLGroupBy;
 begin
-  FCriterias.Add(TSQLCriteria.Create(pColumnName, ctComma));
+  GetCriterias.Add(TSQLCriteria.Create(pColumnName, ctComma));
   Result := Self;
 end;
 
@@ -879,7 +838,7 @@ function TSQLGroupBy.Columns(const pColumnNames: array of string): ISQLGroupBy;
 var
   I: Integer;
 begin
-  FCriterias.Clear;
+  GetCriterias.Clear;
   for I := low(pColumnNames) to high(pColumnNames) do
     Column(pColumnNames[I]);
   Result := Self;
@@ -888,27 +847,13 @@ end;
 procedure TSQLGroupBy.AfterConstruction;
 begin
   inherited AfterConstruction;
-  FCriterias := TList<ISQLCriteria>.Create;
-  FStatementToString := nil;
-  FStatementType := stNone;
   FOrderBy := TSQLOrderBy.Create;
   FHaving := TSQLHaving.Create;
   FUnions := TList<ISQLUnion>.Create;
 end;
 
-procedure TSQLGroupBy.AppendStatementToString(const pFuncToString: TFunc<string>);
-begin
-  FStatementToString := pFuncToString;
-end;
-
-procedure TSQLGroupBy.AppendStatementType(const pStatementType: TSQLStatementType);
-begin
-  FStatementType := pStatementType;
-end;
-
 procedure TSQLGroupBy.BeforeDestruction;
 begin
-  FreeAndNil(FCriterias);
   FreeAndNil(FUnions);
   inherited BeforeDestruction;
 end;
@@ -917,20 +862,15 @@ procedure TSQLGroupBy.CopyOf(const pSource: ISQLGroupBy);
 var
   I: Integer;
 begin
-  FCriterias.Clear;
+  GetCriterias.Clear;
   for I := 0 to Pred(pSource.Criterias.Count) do
-    FCriterias.Add(pSource.Criterias[I]);
-end;
-
-function TSQLGroupBy.GetCriterias: TList<ISQLCriteria>;
-begin
-  Result := FCriterias;
+    GetCriterias.Add(pSource.Criterias[I]);
 end;
 
 function TSQLGroupBy.Having(const pHavingCriterias: array of string): ISQLHaving;
 begin
   FHaving.AppendStatementToString(Self.ToString);
-  FHaving.AppendStatementType(Self.FStatementType);
+  FHaving.AppendStatementType(Self.GetStatementType);
   FHaving.Aggregate(pHavingCriterias);
   Result := FHaving;
 end;
@@ -938,35 +878,35 @@ end;
 function TSQLGroupBy.Having: ISQLHaving;
 begin
   FHaving.AppendStatementToString(Self.ToString);
-  FHaving.AppendStatementType(Self.FStatementType);
+  FHaving.AppendStatementType(Self.GetStatementType);
   Result := FHaving;
 end;
 
 function TSQLGroupBy.Having(const pHaving: ISQLHaving): ISQLHaving;
 begin
   FHaving.AppendStatementToString(Self.ToString);
-  FHaving.AppendStatementType(Self.FStatementType);
+  FHaving.AppendStatementType(Self.GetStatementType);
   FHaving.CopyOf(pHaving);
   Result := FHaving;
 end;
 
 procedure TSQLGroupBy.InternalAddUnion(const pUnionSQL: string; const pUnionType: TSQLUnionType);
 begin
-  if (FStatementType = stSelect) then
+  if (GetStatementType = stSelect) then
     FUnions.Add(TSQLUnion.Create(pUnionType, pUnionSQL));
 end;
 
 function TSQLGroupBy.OrderBy: ISQLOrderBy;
 begin
   FOrderBy.AppendStatementToString(Self.ToString);
-  FOrderBy.AppendStatementType(Self.FStatementType);
+  FOrderBy.AppendStatementType(Self.GetStatementType);
   Result := FOrderBy;
 end;
 
 function TSQLGroupBy.OrderBy(const pOrderBy: ISQLOrderBy): ISQLOrderBy;
 begin
   FOrderBy.AppendStatementToString(Self.ToString);
-  FOrderBy.AppendStatementType(Self.FStatementType);
+  FOrderBy.AppendStatementType(Self.GetStatementType);
   FOrderBy.CopyOf(pOrderBy);
   Result := FOrderBy;
 end;
@@ -986,14 +926,14 @@ begin
       vStrBuilder.AppendLine;
     end;
 
-    for I := 0 to Pred(FCriterias.Count) do
+    for I := 0 to Pred(GetCriterias.Count) do
     begin
       if I = 0 then
         vStrBuilder.Append(' Group By')
       else
-        vStrBuilder.Append(FCriterias[I].GetConnectorDescription);
+        vStrBuilder.Append(GetCriterias[I].GetConnectorDescription);
 
-      vStrBuilder.Append(' ' + FCriterias[I].Criteria);
+      vStrBuilder.Append(' ' + GetCriterias[I].Criteria);
     end;
 
     for I := 0 to Pred(FUnions.Count) do
@@ -1038,7 +978,7 @@ end;
 function TSQLGroupBy.OrderBy(const pColumnNames: array of string): ISQLOrderBy;
 begin
   FOrderBy.AppendStatementToString(Self.ToString);
-  FOrderBy.AppendStatementType(Self.FStatementType);
+  FOrderBy.AppendStatementType(Self.GetStatementType);
   FOrderBy.Columns(pColumnNames);
   Result := FOrderBy;
 end;
@@ -1060,7 +1000,7 @@ end;
 procedure TSQLSelect.AfterConstruction;
 begin
   inherited AfterConstruction;
-  FStatementType := stSelect;
+  SetStatementType(stSelect);
   FDistinct := False;
   FColumns := TStringList.Create;
   FColumns.Delimiter := ',';
@@ -1123,15 +1063,10 @@ begin
   Result := Self;
 end;
 
-function TSQLSelect.GetStatementType: TSQLStatementType;
-begin
-  Result := FStatementType;
-end;
-
 function TSQLSelect.GroupBy(const pGroupBy: ISQLGroupBy): ISQLGroupBy;
 begin
   FGroupBy.AppendStatementToString(Self.ToString);
-  FGroupBy.AppendStatementType(Self.FStatementType);
+  FGroupBy.AppendStatementType(Self.GetStatementType);
   FGroupBy.CopyOf(pGroupBy);
   Result := FGroupBy;
 end;
@@ -1139,14 +1074,14 @@ end;
 function TSQLSelect.GroupBy: ISQLGroupBy;
 begin
   FGroupBy.AppendStatementToString(Self.ToString);
-  FGroupBy.AppendStatementType(Self.FStatementType);
+  FGroupBy.AppendStatementType(Self.GetStatementType);
   Result := FGroupBy;
 end;
 
 function TSQLSelect.GroupBy(const pColumnNames: array of string): ISQLGroupBy;
 begin
   FGroupBy.AppendStatementToString(Self.ToString);
-  FGroupBy.AppendStatementType(Self.FStatementType);
+  FGroupBy.AppendStatementType(Self.GetStatementType);
   FGroupBy.Columns(pColumnNames);
   Result := FGroupBy;
 end;
@@ -1154,14 +1089,14 @@ end;
 function TSQLSelect.Having: ISQLHaving;
 begin
   FHaving.AppendStatementToString(Self.ToString);
-  FHaving.AppendStatementType(Self.FStatementType);
+  FHaving.AppendStatementType(Self.GetStatementType);
   Result := FHaving;
 end;
 
 function TSQLSelect.Having(const pHavingCriterias: array of string): ISQLHaving;
 begin
   FHaving.AppendStatementToString(Self.ToString);
-  FHaving.AppendStatementType(Self.FStatementType);
+  FHaving.AppendStatementType(Self.GetStatementType);
   FHaving.Aggregate(pHavingCriterias);
   Result := FHaving;
 end;
@@ -1169,7 +1104,7 @@ end;
 function TSQLSelect.Having(const pHaving: ISQLHaving): ISQLHaving;
 begin
   FHaving.AppendStatementToString(Self.ToString);
-  FHaving.AppendStatementType(Self.FStatementType);
+  FHaving.AppendStatementType(Self.GetStatementType);
   FHaving.CopyOf(pHaving);
   Result := FHaving;
 end;
@@ -1189,7 +1124,7 @@ end;
 function TSQLSelect.OrderBy(const pColumnNames: array of string): ISQLOrderBy;
 begin
   FOrderBy.AppendStatementToString(Self.ToString);
-  FOrderBy.AppendStatementType(Self.FStatementType);
+  FOrderBy.AppendStatementType(Self.GetStatementType);
   FOrderBy.Columns(pColumnNames);
   Result := FOrderBy;
 end;
@@ -1197,7 +1132,7 @@ end;
 function TSQLSelect.OrderBy(const pOrderBy: ISQLOrderBy): ISQLOrderBy;
 begin
   FOrderBy.AppendStatementToString(Self.ToString);
-  FOrderBy.AppendStatementType(Self.FStatementType);
+  FOrderBy.AppendStatementType(Self.GetStatementType);
   FOrderBy.CopyOf(pOrderBy);
   Result := FOrderBy;
 end;
@@ -1205,7 +1140,7 @@ end;
 function TSQLSelect.OrderBy: ISQLOrderBy;
 begin
   FOrderBy.AppendStatementToString(Self.ToString);
-  FOrderBy.AppendStatementType(Self.FStatementType);
+  FOrderBy.AppendStatementType(Self.GetStatementType);
   Result := FOrderBy;
 end;
 
@@ -1289,14 +1224,14 @@ end;
 function TSQLSelect.Where: ISQLWhere;
 begin
   FWhere.AppendStatementToString(Self.ToString);
-  FWhere.AppendStatementType(Self.FStatementType);
+  FWhere.AppendStatementType(Self.GetStatementType);
   Result := FWhere;
 end;
 
 function TSQLSelect.Where(const pColumnName: string): ISQLWhere;
 begin
   FWhere.AppendStatementToString(Self.ToString);
-  FWhere.AppendStatementType(Self.FStatementType);
+  FWhere.AppendStatementType(Self.GetStatementType);
   FWhere.Column(pColumnName);
   Result := FWhere;
 end;
@@ -1304,7 +1239,7 @@ end;
 function TSQLSelect.Where(const pWhere: ISQLWhere): ISQLWhere;
 begin
   FWhere.AppendStatementToString(Self.ToString);
-  FWhere.AppendStatementType(Self.FStatementType);
+  FWhere.AppendStatementType(Self.GetStatementType);
   FWhere.CopyOf(pWhere);
   Result := FWhere;
 end;
@@ -1403,30 +1338,16 @@ end;
 procedure TSQLWhere.AfterConstruction;
 begin
   inherited AfterConstruction;
-  FCriterias := TList<ISQLCriteria>.Create;
-  FStatementToString := nil;
   FColumnName := EmptyStr;
   FConnectorType := ctAnd;
-  FStatementType := stNone;
   FGroupBy := TSQLGroupBy.Create;
   FHaving := TSQLHaving.Create;
   FOrderBy := TSQLOrderBy.Create;
   FUnions := TList<ISQLUnion>.Create;
 end;
 
-procedure TSQLWhere.AppendStatementToString(const pFuncToString: TFunc<string>);
-begin
-  FStatementToString := pFuncToString;
-end;
-
-procedure TSQLWhere.AppendStatementType(const pStatementType: TSQLStatementType);
-begin
-  FStatementType := pStatementType;
-end;
-
 procedure TSQLWhere.BeforeDestruction;
 begin
-  FreeAndNil(FCriterias);
   FreeAndNil(FUnions);
   inherited BeforeDestruction;
 end;
@@ -1435,7 +1356,7 @@ function TSQLWhere.Between(const pInitial, pFinal: TValue): ISQLWhere;
 begin
   ColumnIsValid(FColumnName);
 
-  FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' Between ' + ConvertSQLValue(pInitial) + ' And ' + ConvertSQLValue(pFinal) + ')',
+  GetCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' Between ' + ConvertSQLValue(pInitial) + ' And ' + ConvertSQLValue(pFinal) + ')',
     FConnectorType));
 
   FConnectorType := ctAnd;
@@ -1447,16 +1368,16 @@ procedure TSQLWhere.CopyOf(const pSource: ISQLWhere);
 var
   I: Integer;
 begin
-  FCriterias.Clear;
+  GetCriterias.Clear;
   for I := 0 to Pred(pSource.Criterias.Count) do
-    FCriterias.Add(pSource.Criterias[I]);
+    GetCriterias.Add(pSource.Criterias[I]);
 end;
 
 function TSQLWhere.Criterion(const pOperator: TSQLOperatorType; const pValue: TValue): ISQLWhere;
 begin
   ColumnIsValid(FColumnName);
 
-  FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[pOperator] + ' ' + ConvertSQLValue(pValue) + ')', FConnectorType));
+  GetCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[pOperator] + ' ' + ConvertSQLValue(pValue) + ')', FConnectorType));
 
   FConnectorType := ctAnd;
   FColumnName := EmptyStr;
@@ -1468,7 +1389,7 @@ begin
   ColumnIsValid(FColumnName);
   ColumnIsValid(pColumnNameValue);
 
-  FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[pOperator] + ' ' + pColumnNameValue + ')', FConnectorType));
+  GetCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' + _cSQLOperator[pOperator] + ' ' + pColumnNameValue + ')', FConnectorType));
 
   FConnectorType := ctAnd;
   FColumnName := EmptyStr;
@@ -1506,11 +1427,6 @@ begin
   Result := Self;
 end;
 
-function TSQLWhere.GetCriterias: TList<ISQLCriteria>;
-begin
-  Result := FCriterias;
-end;
-
 function TSQLWhere.Greater(const pValue: TValue): ISQLWhere;
 begin
   InternalAddBasicCriteria(_cSQLOperator[opGreater], pValue, True);
@@ -1526,7 +1442,7 @@ end;
 function TSQLWhere.GroupBy(const pColumnNames: array of string): ISQLGroupBy;
 begin
   FGroupBy.AppendStatementToString(Self.ToString);
-  FGroupBy.AppendStatementType(Self.FStatementType);
+  FGroupBy.AppendStatementType(Self.GetStatementType);
   FGroupBy.Columns(pColumnNames);
   Result := FGroupBy;
 end;
@@ -1534,7 +1450,7 @@ end;
 function TSQLWhere.GroupBy(const pGroupBy: ISQLGroupBy): ISQLGroupBy;
 begin
   FGroupBy.AppendStatementToString(Self.ToString);
-  FGroupBy.AppendStatementType(Self.FStatementType);
+  FGroupBy.AppendStatementType(Self.GetStatementType);
   FGroupBy.CopyOf(pGroupBy);
   Result := FGroupBy;
 end;
@@ -1542,14 +1458,14 @@ end;
 function TSQLWhere.GroupBy: ISQLGroupBy;
 begin
   FGroupBy.AppendStatementToString(Self.ToString);
-  FGroupBy.AppendStatementType(Self.FStatementType);
+  FGroupBy.AppendStatementType(Self.GetStatementType);
   Result := FGroupBy;
 end;
 
 function TSQLWhere.Having(const pHaving: ISQLHaving): ISQLHaving;
 begin
   FHaving.AppendStatementToString(Self.ToString);
-  FHaving.AppendStatementType(Self.FStatementType);
+  FHaving.AppendStatementType(Self.GetStatementType);
   FHaving.CopyOf(pHaving);
   Result := FHaving;
 end;
@@ -1557,7 +1473,7 @@ end;
 function TSQLWhere.Having(const pHavingCriterias: array of string): ISQLHaving;
 begin
   FHaving.AppendStatementToString(Self.ToString);
-  FHaving.AppendStatementType(Self.FStatementType);
+  FHaving.AppendStatementType(Self.GetStatementType);
   FHaving.Aggregate(pHavingCriterias);
   Result := FHaving;
 end;
@@ -1565,7 +1481,7 @@ end;
 function TSQLWhere.Having: ISQLHaving;
 begin
   FHaving.AppendStatementToString(Self.ToString);
-  FHaving.AppendStatementType(Self.FStatementType);
+  FHaving.AppendStatementType(Self.GetStatementType);
   Result := FHaving;
 end;
 
@@ -1588,7 +1504,7 @@ begin
     end;
     vStrBuilder.Append(')');
 
-    FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' In ' + vStrBuilder.ToString + ')', FConnectorType));
+    GetCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' In ' + vStrBuilder.ToString + ')', FConnectorType));
   finally
     FreeAndNil(vStrBuilder);
   end;
@@ -1603,10 +1519,10 @@ begin
   ColumnIsValid(FColumnName);
 
   if pCaseSensitive then
-    FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' +
+    GetCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' +
       pSQLOperator + ' ' + ConvertSQLValue(pSQLValue) + ')', FConnectorType))
   else
-    FCriterias.Add(TSQLCriteria.Create('(Upper(' + FColumnName + ') ' +
+    GetCriterias.Add(TSQLCriteria.Create('(Upper(' + FColumnName + ') ' +
       pSQLOperator + ' Upper(' + ConvertSQLValue(pSQLValue) + '))', FConnectorType));
 
   FConnectorType := ctAnd;
@@ -1633,9 +1549,9 @@ begin
   end;
 
   if pCaseSensitive then
-    FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' + pSQLOperator + ' ' + vValue + ')', FConnectorType))
+    GetCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' ' + pSQLOperator + ' ' + vValue + ')', FConnectorType))
   else
-    FCriterias.Add(TSQLCriteria.Create('(Upper(' + FColumnName + ') ' + pSQLOperator + ' Upper(' + vValue + '))', FConnectorType));
+    GetCriterias.Add(TSQLCriteria.Create('(Upper(' + FColumnName + ') ' + pSQLOperator + ' Upper(' + vValue + '))', FConnectorType));
 
   FConnectorType := ctAnd;
   FColumnName := EmptyStr;
@@ -1643,7 +1559,7 @@ end;
 
 procedure TSQLWhere.InternalAddUnion(const pUnionSQL: string; const pUnionType: TSQLUnionType);
 begin
-  if (FStatementType = stSelect) then
+  if (GetStatementType = stSelect) then
     FUnions.Add(TSQLUnion.Create(pUnionType, pUnionSQL));
 end;
 
@@ -1651,7 +1567,7 @@ function TSQLWhere.IsNotNull: ISQLWhere;
 begin
   ColumnIsValid(FColumnName);
 
-  FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' Is Not Null)', FConnectorType));
+  GetCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' Is Not Null)', FConnectorType));
 
   FConnectorType := ctAnd;
   FColumnName := EmptyStr;
@@ -1662,7 +1578,7 @@ function TSQLWhere.IsNull: ISQLWhere;
 begin
   ColumnIsValid(FColumnName);
 
-  FCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' Is Null)', FConnectorType));
+  GetCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' Is Null)', FConnectorType));
 
   FConnectorType := ctAnd;
   FColumnName := EmptyStr;
@@ -1708,14 +1624,14 @@ end;
 function TSQLWhere.OrderBy: ISQLOrderBy;
 begin
   FOrderBy.AppendStatementToString(Self.ToString);
-  FOrderBy.AppendStatementType(Self.FStatementType);
+  FOrderBy.AppendStatementType(Self.GetStatementType);
   Result := FOrderBy;
 end;
 
 function TSQLWhere.OrderBy(const pColumnNames: array of string): ISQLOrderBy;
 begin
   FOrderBy.AppendStatementToString(Self.ToString);
-  FOrderBy.AppendStatementType(Self.FStatementType);
+  FOrderBy.AppendStatementType(Self.GetStatementType);
   FOrderBy.Columns(pColumnNames);
   Result := FOrderBy;
 end;
@@ -1723,7 +1639,7 @@ end;
 function TSQLWhere.OrderBy(const pOrderBy: ISQLOrderBy): ISQLOrderBy;
 begin
   FOrderBy.AppendStatementToString(Self.ToString);
-  FOrderBy.AppendStatementType(Self.FStatementType);
+  FOrderBy.AppendStatementType(Self.GetStatementType);
   FOrderBy.CopyOf(pOrderBy);
   Result := FOrderBy;
 end;
@@ -1743,14 +1659,14 @@ begin
       vStrBuilder.AppendLine;
     end;
 
-    for I := 0 to Pred(FCriterias.Count) do
+    for I := 0 to Pred(GetCriterias.Count) do
     begin
       if (I = 0) then
         vStrBuilder.Append(' Where ')
       else
-        vStrBuilder.Append(' ' + FCriterias[I].GetConnectorDescription + ' ');
+        vStrBuilder.Append(' ' + GetCriterias[I].GetConnectorDescription + ' ');
 
-      vStrBuilder.Append(FCriterias[I].Criteria);
+      vStrBuilder.Append(GetCriterias[I].Criteria);
     end;
 
     for I := 0 to Pred(FUnions.Count) do
@@ -1773,7 +1689,7 @@ function TSQLWhere._And(const pWhere: ISQLWhere): ISQLWhere;
 begin
   pWhere.AppendStatementToString(nil);
 
-  FCriterias.Add(TSQLCriteria.Create('(' + AnsiReplaceText(pWhere.ToString, ' Where ', '') + ')', ctAnd));
+  GetCriterias.Add(TSQLCriteria.Create('(' + AnsiReplaceText(pWhere.ToString, ' Where ', '') + ')', ctAnd));
 
   FConnectorType := ctAnd;
   FColumnName := EmptyStr;
@@ -1784,7 +1700,7 @@ function TSQLWhere._Or(const pWhere: ISQLWhere): ISQLWhere;
 begin
   pWhere.AppendStatementToString(nil);
 
-  FCriterias.Add(TSQLCriteria.Create('(' + AnsiReplaceText(pWhere.ToString, ' Where ', '') + ')', ctOr));
+  GetCriterias.Add(TSQLCriteria.Create('(' + AnsiReplaceText(pWhere.ToString, ' Where ', '') + ')', ctOr));
 
   FConnectorType := ctAnd;
   FColumnName := EmptyStr;
@@ -1880,7 +1796,7 @@ end;
 procedure TSQLDelete.AfterConstruction;
 begin
   inherited AfterConstruction;
-  FStatementType := stDelete;
+  SetStatementType(stDelete);
   FTable := TSQLTable.Create;
   FWhere := TSQLWhere.Create;
 end;
@@ -1889,11 +1805,6 @@ procedure TSQLDelete.BeforeDestruction;
 begin
 
   inherited BeforeDestruction;
-end;
-
-function TSQLDelete.GetStatementType: TSQLStatementType;
-begin
-  Result := FStatementType;
 end;
 
 function TSQLDelete.From(const pTableName: string): ISQLDelete;
@@ -1968,7 +1879,7 @@ end;
 procedure TSQLUpdate.AfterConstruction;
 begin
   inherited AfterConstruction;
-  FStatementType := stUpdate;
+  SetStatementType(stUpdate);
   FColumns := TStringList.Create;
   FValues := TList<ISQLValue>.Create;
   FTable := TSQLTable.Create;
@@ -2001,11 +1912,6 @@ begin
   FColumns.Add(pColumnName);
   FValues.Add(TSQLValue.Create(ConvertSQLValue(pValue)));
   Result := Self;
-end;
-
-function TSQLUpdate.GetStatementType: TSQLStatementType;
-begin
-  Result := FStatementType;
 end;
 
 function TSQLUpdate.Table(const pTableName: string): ISQLUpdate;
@@ -2082,7 +1988,7 @@ end;
 procedure TSQLInsert.AfterConstruction;
 begin
   inherited AfterConstruction;
-  FStatementType := stInsert;
+  SetStatementType(stInsert);
   FColumns := TStringList.Create;
   FValues := TList<ISQLValue>.Create;
   FTable := TSQLTable.Create;
@@ -2093,11 +1999,6 @@ begin
   FreeAndNil(FColumns);
   FreeAndNil(FValues);
   inherited BeforeDestruction;
-end;
-
-function TSQLInsert.GetStatementType: TSQLStatementType;
-begin
-  Result := FStatementType;
 end;
 
 function TSQLInsert.Columns(const pColumnNames: array of string): ISQLInsert;
@@ -2341,6 +2242,80 @@ function TSQLCoalesce.Value(const pValue: TValue): ISQLCoalesce;
 begin
   FValue := pValue;
   Result := Self;
+end;
+
+{ TSQLStatement }
+
+procedure TSQLStatement.AfterConstruction;
+begin
+  inherited AfterConstruction;
+  FStatementType := stNone;
+end;
+
+function TSQLStatement.GetStatementType: TSQLStatementType;
+begin
+  Result := FStatementType;
+end;
+
+procedure TSQLStatement.SaveToFile(const pFileName: string);
+begin
+  SaveSQLToFile(pFileName, Self.ToString);
+end;
+
+procedure TSQLStatement.SetStatementType(const pStatementType: TSQLStatementType);
+begin
+  FStatementType := pStatementType;
+end;
+
+function TSQLStatement.ToString: string;
+begin
+  // Inheritance ToString
+end;
+
+{ TSQLClause }
+
+procedure TSQLClause.AfterConstruction;
+begin
+  inherited AfterConstruction;
+  FCriterias := TList<ISQLCriteria>.Create;
+  FStatementToString := nil;
+  FStatementType := stNone;
+end;
+
+procedure TSQLClause.AppendStatementToString(const pFuncToString: TFunc<string>);
+begin
+  FStatementToString := pFuncToString;
+end;
+
+procedure TSQLClause.AppendStatementType(const pStatementType: TSQLStatementType);
+begin
+  FStatementType := pStatementType;
+end;
+
+procedure TSQLClause.BeforeDestruction;
+begin
+  FreeAndNil(FCriterias);
+  inherited BeforeDestruction;
+end;
+
+function TSQLClause.GetCriterias: TList<ISQLCriteria>;
+begin
+  Result := FCriterias;
+end;
+
+function TSQLClause.GetStatementType: TSQLStatementType;
+begin
+  Result := FStatementType;
+end;
+
+procedure TSQLClause.SaveToFile(const pFileName: string);
+begin
+  SaveSQLToFile(pFileName, Self.ToString);
+end;
+
+function TSQLClause.ToString: string;
+begin
+  // Inheritance ToString
 end;
 
 end.

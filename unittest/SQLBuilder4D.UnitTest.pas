@@ -32,6 +32,8 @@ type
     procedure TestSQLDateTime();
     procedure TestSQLFloat();
     procedure TestSQLParserSelect();
+    procedure TestSQLStatementSaveToFile();
+    procedure TestSQLClauseSaveToFile();
   end;
 
 implementation
@@ -51,6 +53,39 @@ procedure TTestSQLBuilder4D.TearDown;
 begin
   inherited;
 
+end;
+
+procedure TTestSQLBuilder4D.TestSQLClauseSaveToFile;
+const
+  cSQLFile = 'SQLFile.SQL';
+
+  cExpected_1 =
+    'Select '
+    + sLineBreak +
+    ' C_Code, C_Name, C_Doc'
+    + sLineBreak +
+    ' From Customers'
+    + sLineBreak +
+    ' Where (C_Code = 1) And (C_Name <> ''Ezequiel'')' +
+    sLineBreak;
+var
+  vStringList: TStringList;
+begin
+  vStringList := TStringList.Create;
+  try
+    TSQLBuilder.Select
+      .Column('C_Code')
+      .Column('C_Name')
+      .Column('C_Doc')
+      .From('Customers')
+      .Where('C_Code').Equal(1)
+      ._And('C_Name').Different('Ezequiel')
+      .SaveToFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
+    vStringList.LoadFromFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
+    CheckEqualsString(cExpected_1, vStringList.Text);
+  finally
+    FreeAndNil(vStringList);
+  end;
 end;
 
 procedure TTestSQLBuilder4D.TestSQLDateTime;
@@ -1320,6 +1355,88 @@ begin
     .OrderBy(['C_Code', 'C_Doc'])
     .ToString;
   CheckEqualsString(cExpected_5, vOut);
+end;
+
+procedure TTestSQLBuilder4D.TestSQLStatementSaveToFile;
+const
+  cSQLFile = 'SQLFile.SQL';
+
+  cSelect =
+    'Select '
+    + sLineBreak +
+    ' C_Code, C_Name, C_Doc'
+    + sLineBreak +
+    ' From Customers'
+    + sLineBreak;
+
+  cUpdate =
+    'Update Customers Set'
+    + sLineBreak +
+    ' C_Code = 1,'
+    + sLineBreak +
+    ' C_Name = ''Ejm''' +
+    sLineBreak;
+
+  cDelete =
+    'Delete From Customers' +
+    sLineBreak;
+
+  cInsert =
+    'Insert Into Customers'
+    + sLineBreak +
+    ' (C_Code,'
+    + sLineBreak +
+    '  C_Name,'
+    + sLineBreak +
+    '  C_Doc)'
+    + sLineBreak +
+    ' Values'
+    + sLineBreak +
+    ' (1,'
+    + sLineBreak +
+    '  ''Ejm'','
+    + sLineBreak +
+    '  58)' +
+    sLineBreak;
+var
+  vStringList: TStringList;
+begin
+  vStringList := TStringList.Create;
+  try
+    TSQLBuilder.Select
+      .Column('C_Code')
+      .Column('C_Name')
+      .Column('C_Doc')
+      .From('Customers')
+      .SaveToFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
+    vStringList.LoadFromFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
+    CheckEqualsString(cSelect, vStringList.Text);
+
+    TSQLBuilder.Update
+      .Table('Customers')
+      .ColumnSetValue('C_Code', 1)
+      .ColumnSetValue('C_Name', 'Ejm')
+      .SaveToFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
+    vStringList.LoadFromFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
+    CheckEqualsString(cUpdate, vStringList.Text);
+
+    TSQLBuilder.Delete
+      .From('Customers')
+      .SaveToFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
+    vStringList.LoadFromFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
+    CheckEqualsString(cDelete, vStringList.Text);
+
+    TSQLBuilder.Insert
+      .Into('Customers')
+      .ColumnValue('C_Code', 1)
+      .ColumnValue('C_Name', 'Ejm')
+      .ColumnValue('C_Doc', 58)
+      .SaveToFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
+    vStringList.LoadFromFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
+    CheckEqualsString(cInsert, vStringList.Text);
+  finally
+    FreeAndNil(vStringList);
+  end;
 end;
 
 procedure TTestSQLBuilder4D.TestSQLUpdate;

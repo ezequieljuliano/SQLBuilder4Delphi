@@ -34,6 +34,7 @@ type
     function GetStatementType(): TSQLStatementType;
 
     function ToString(): string;
+    procedure SaveToFile(const pFileName: string);
 
     property StatementType: TSQLStatementType read GetStatementType;
   end;
@@ -60,6 +61,7 @@ type
     procedure AppendStatementType(const pStatementType: TSQLStatementType);
 
     function ToString(): string;
+    procedure SaveToFile(const pFileName: string);
 
     property Criterias: TList<ISQLCriteria> read GetCriterias;
   end;
