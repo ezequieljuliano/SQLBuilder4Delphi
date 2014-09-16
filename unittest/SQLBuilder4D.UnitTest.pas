@@ -1104,6 +1104,41 @@ const
     ' Having ((C_Code > 0))'
     + sLineBreak +
     ' Order By C_Code, C_Doc';
+
+  cExpected_6 =
+    'Select '
+    + sLineBreak +
+    ' C_Code, C_Name, C_Doc'
+    + sLineBreak +
+    ' From Customers'
+    + sLineBreak +
+    ' Where (C_Code = 1)' +
+    ' And ((C_Name Like ''Ejm'') Or (C_Name Like ''Mje'') Or (C_Name Like ''Jme''))' +
+    ' And ((C_Name Like ''Ejm%'') Or (C_Name Like ''Mje%'') Or (C_Name Like ''Jme%''))' +
+    ' And ((C_Name Like ''%Ejm'') Or (C_Name Like ''%Mje'') Or (C_Name Like ''%Jme''))' +
+    ' And ((C_Name Like ''%Ejm%'') Or (C_Name Like ''%Mje%'') Or (C_Name Like ''%Jme%''))';
+
+  cExpected_7 =
+    'Select '
+    + sLineBreak +
+    ' C_Code, C_Name, C_Doc'
+    + sLineBreak +
+    ' From Customers'
+    + sLineBreak +
+    ' Where ((C_Name Like ''Ejm'') Or (C_Name Like ''Mje'') Or (C_Name Like ''Jme''))' +
+    ' And ((C_Name Like ''Ejm%'') Or (C_Name Like ''Mje%'') Or (C_Name Like ''Jme%''))' +
+    ' And ((C_Name Like ''%Ejm'') Or (C_Name Like ''%Mje'') Or (C_Name Like ''%Jme''))' +
+    ' And ((C_Name Like ''%Ejm%'') Or (C_Name Like ''%Mje%'') Or (C_Name Like ''%Jme%''))';
+
+  cExpected_8 =
+    'Select '
+    + sLineBreak +
+    ' C_Code, C_Name, C_Doc'
+    + sLineBreak +
+    ' From Customers'
+    + sLineBreak +
+    ' Where (C_Code = 1)' +
+    ' Or (C_Code Not In (1, 2, 3))';
 var
   vOut: string;
 begin
@@ -1212,6 +1247,44 @@ begin
     .OrderBy(['C_Code', 'C_Doc'])
     .ToString;
   CheckEqualsString(cExpected_5, vOut);
+
+  vOut :=
+    TSQLBuilder.Select
+    .Column('C_Code')
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .Where('C_Code').Equal(1)
+    ._And('C_Name').Like(['Ejm', 'Mje', 'Jme'], loEqual)
+    ._And('C_Name').Like(['Ejm', 'Mje', 'Jme'], loStarting)
+    ._And('C_Name').Like(['Ejm', 'Mje', 'Jme'], loEnding)
+    ._And('C_Name').Like(['Ejm', 'Mje', 'Jme'], loContaining)
+    .ToString;
+  CheckEqualsString(cExpected_6, vOut);
+
+  vOut :=
+    TSQLBuilder.Select
+    .Column('C_Code')
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .Where('C_Name').Like(['Ejm', 'Mje', 'Jme'], loEqual)
+    ._And('C_Name').Like(['Ejm', 'Mje', 'Jme'], loStarting)
+    ._And('C_Name').Like(['Ejm', 'Mje', 'Jme'], loEnding)
+    ._And('C_Name').Like(['Ejm', 'Mje', 'Jme'], loContaining)
+    .ToString;
+  CheckEqualsString(cExpected_7, vOut);
+
+  vOut :=
+    TSQLBuilder.Select
+    .Column('C_Code')
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .Where('C_Code').Equal(1)
+    ._Or('C_Code').NotInList([1, 2, 3])
+    .ToString;
+  CheckEqualsString(cExpected_8, vOut);
 end;
 
 procedure TTestSQLBuilder4D.TestSQLSelectWhereCaseInSensitive;
@@ -1271,6 +1344,19 @@ const
     ' Having ((C_Code > 0))'
     + sLineBreak +
     ' Order By C_Code, C_Doc';
+
+  cExpected_6 =
+    'Select '
+    + sLineBreak +
+    ' C_Code, C_Name, C_Doc'
+    + sLineBreak +
+    ' From Customers'
+    + sLineBreak +
+    ' Where (C_Code = 1)' +
+    ' And ((Upper(C_Name) Like Upper(''Ejm'')) Or (Upper(C_Name) Like Upper(''Mje'')) Or (Upper(C_Name) Like Upper(''Jme'')))' +
+    ' And ((Upper(C_Name) Like Upper(''Ejm%'')) Or (Upper(C_Name) Like Upper(''Mje%'')) Or (Upper(C_Name) Like Upper(''Jme%'')))' +
+    ' And ((Upper(C_Name) Like Upper(''%Ejm'')) Or (Upper(C_Name) Like Upper(''%Mje'')) Or (Upper(C_Name) Like Upper(''%Jme'')))' +
+    ' And ((Upper(C_Name) Like Upper(''%Ejm%'')) Or (Upper(C_Name) Like Upper(''%Mje%'')) Or (Upper(C_Name) Like Upper(''%Jme%'')))';
 var
   vOut: string;
 begin
@@ -1355,6 +1441,20 @@ begin
     .OrderBy(['C_Code', 'C_Doc'])
     .ToString;
   CheckEqualsString(cExpected_5, vOut);
+
+  vOut :=
+    TSQLBuilder.Select
+    .Column('C_Code')
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .Where('C_Code').Equal(1)
+    ._And('C_Name').Like(['Ejm', 'Mje', 'Jme'], False, loEqual)
+    ._And('C_Name').Like(['Ejm', 'Mje', 'Jme'], False, loStarting)
+    ._And('C_Name').Like(['Ejm', 'Mje', 'Jme'], False, loEnding)
+    ._And('C_Name').Like(['Ejm', 'Mje', 'Jme'], False, loContaining)
+    .ToString;
+  CheckEqualsString(cExpected_6, vOut);
 end;
 
 procedure TTestSQLBuilder4D.TestSQLStatementSaveToFile;

@@ -220,6 +220,7 @@ type
     procedure InternalAddUnion(const pUnionSQL: string; const pUnionType: TSQLUnionType);
     procedure InternalAddBasicCriteria(const pSQLOperator: string; const pSQLValue: TValue; const pCaseSensitive: Boolean);
     procedure InternalAddLikeCriteria(const pSQLOperator, pSQLValue: string; const pLikeOperator: TSQLLikeType; const pCaseSensitive: Boolean);
+    function InternalInList(const pValues: array of TValue; const pNotIn: Boolean): ISQLWhere;
   public
     procedure AfterConstruction; override;
     procedure BeforeDestruction; override;
@@ -249,6 +250,8 @@ type
 
     function Like(const pValue: string; const pOperator: TSQLLikeType = loEqual): ISQLWhere; overload;
     function Like(const pValue: string; const pCaseSensitive: Boolean; const pOperator: TSQLLikeType = loEqual): ISQLWhere; overload;
+    function Like(const pValues: array of string; const pOperator: TSQLLikeType = loEqual): ISQLWhere; overload;
+    function Like(const pValues: array of string; const pCaseSensitive: Boolean; const pOperator: TSQLLikeType = loEqual): ISQLWhere; overload;
 
     function NotLike(const pValue: string; const pOperator: TSQLLikeType = loEqual): ISQLWhere; overload;
     function NotLike(const pValue: string; const pCaseSensitive: Boolean; const pOperator: TSQLLikeType = loEqual): ISQLWhere; overload;
@@ -256,6 +259,7 @@ type
     function IsNull(): ISQLWhere;
     function IsNotNull(): ISQLWhere;
     function InList(const pValues: array of TValue): ISQLWhere;
+    function NotInList(const pValues: array of TValue): ISQLWhere;
     function Between(const pInitial, pFinal: TValue): ISQLWhere;
 
     function Criterion(const pOperator: TSQLOperatorType; const pValue: TValue): ISQLWhere;
@@ -1486,32 +1490,8 @@ begin
 end;
 
 function TSQLWhere.InList(const pValues: array of TValue): ISQLWhere;
-var
-  vStrBuilder: TStringBuilder;
-  I: Integer;
 begin
-  ColumnIsValid(FColumnName);
-
-  vStrBuilder := TStringBuilder.Create;
-  try
-    vStrBuilder.Append('(');
-    for I := low(pValues) to high(pValues) do
-    begin
-      if (I > 0) then
-        vStrBuilder.Append(', ');
-
-      vStrBuilder.Append(ConvertSQLValue(pValues[I]));
-    end;
-    vStrBuilder.Append(')');
-
-    GetCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' In ' + vStrBuilder.ToString + ')', FConnectorType));
-  finally
-    FreeAndNil(vStrBuilder);
-  end;
-
-  FConnectorType := ctAnd;
-  FColumnName := EmptyStr;
-  Result := Self;
+  Result := Self.InternalInList(pValues, False);
 end;
 
 procedure TSQLWhere.InternalAddBasicCriteria(const pSQLOperator: string; const pSQLValue: TValue; const pCaseSensitive: Boolean);
@@ -1563,6 +1543,38 @@ begin
     FUnions.Add(TSQLUnion.Create(pUnionType, pUnionSQL));
 end;
 
+function TSQLWhere.InternalInList(const pValues: array of TValue; const pNotIn: Boolean): ISQLWhere;
+var
+  vStrBuilder: TStringBuilder;
+  I: Integer;
+begin
+  ColumnIsValid(FColumnName);
+
+  vStrBuilder := TStringBuilder.Create;
+  try
+    vStrBuilder.Append('(');
+    for I := low(pValues) to high(pValues) do
+    begin
+      if (I > 0) then
+        vStrBuilder.Append(', ');
+
+      vStrBuilder.Append(ConvertSQLValue(pValues[I]));
+    end;
+    vStrBuilder.Append(')');
+
+    if pNotIn then
+      GetCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' Not In ' + vStrBuilder.ToString + ')', FConnectorType))
+    else
+      GetCriterias.Add(TSQLCriteria.Create('(' + FColumnName + ' In ' + vStrBuilder.ToString + ')', FConnectorType));
+  finally
+    FreeAndNil(vStrBuilder);
+  end;
+
+  FConnectorType := ctAnd;
+  FColumnName := EmptyStr;
+  Result := Self;
+end;
+
 function TSQLWhere.IsNotNull: ISQLWhere;
 begin
   ColumnIsValid(FColumnName);
@@ -1597,6 +1609,38 @@ begin
   Result := Self;
 end;
 
+function TSQLWhere.Like(const pValues: array of string; const pOperator: TSQLLikeType): ISQLWhere;
+var
+  vWhere: ISQLWhere;
+  I: Integer;
+begin
+  vWhere := TSQLBuilder.Where(FColumnName).Like(pValues[0], pOperator);
+  for I := 1 to High(pValues) do
+    vWhere._Or(FColumnName).Like(pValues[I], pOperator);
+
+  Self._And(vWhere);
+
+  FConnectorType := ctAnd;
+  FColumnName := EmptyStr;
+  Result := Self;
+end;
+
+function TSQLWhere.Like(const pValues: array of string; const pCaseSensitive: Boolean; const pOperator: TSQLLikeType): ISQLWhere;
+var
+  vWhere: ISQLWhere;
+  I: Integer;
+begin
+  vWhere := TSQLBuilder.Where(FColumnName).Like(pValues[0], pCaseSensitive, pOperator);
+  for I := 1 to High(pValues) do
+    vWhere._Or(FColumnName).Like(pValues[I], pCaseSensitive, pOperator);
+
+  Self._And(vWhere);
+
+  FConnectorType := ctAnd;
+  FColumnName := EmptyStr;
+  Result := Self;
+end;
+
 function TSQLWhere.Like(const pValue: string; const pCaseSensitive: Boolean; const pOperator: TSQLLikeType): ISQLWhere;
 begin
   InternalAddLikeCriteria(_cSQLOperator[opLike], pValue, pOperator, pCaseSensitive);
@@ -1607,6 +1651,11 @@ function TSQLWhere.Like(const pValue: string; const pOperator: TSQLLikeType): IS
 begin
   InternalAddLikeCriteria(_cSQLOperator[opLike], pValue, pOperator, True);
   Result := Self;
+end;
+
+function TSQLWhere.NotInList(const pValues: array of TValue): ISQLWhere;
+begin
+  Result := Self.InternalInList(pValues, True);
 end;
 
 function TSQLWhere.NotLike(const pValue: string; const pCaseSensitive: Boolean; const pOperator: TSQLLikeType): ISQLWhere;

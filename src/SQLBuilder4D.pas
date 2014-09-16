@@ -199,6 +199,8 @@ type
 
     function Like(const pValue: string; const pOperator: TSQLLikeType = loEqual): ISQLWhere; overload;
     function Like(const pValue: string; const pCaseSensitive: Boolean; const pOperator: TSQLLikeType = loEqual): ISQLWhere; overload;
+    function Like(const pValues: array of string; const pOperator: TSQLLikeType = loEqual): ISQLWhere; overload;
+    function Like(const pValues: array of string; const pCaseSensitive: Boolean; const pOperator: TSQLLikeType = loEqual): ISQLWhere; overload;
 
     function NotLike(const pValue: string; const pOperator: TSQLLikeType = loEqual): ISQLWhere; overload;
     function NotLike(const pValue: string; const pCaseSensitive: Boolean; const pOperator: TSQLLikeType = loEqual): ISQLWhere; overload;
@@ -206,6 +208,7 @@ type
     function IsNull(): ISQLWhere;
     function IsNotNull(): ISQLWhere;
     function InList(const pValues: array of TValue): ISQLWhere;
+    function NotInList(const pValues: array of TValue): ISQLWhere;
     function Between(const pStart, pEnd: TValue): ISQLWhere;
 
     function Criterion(const pOperator: TSQLOperatorType; const pValue: TValue): ISQLWhere;
