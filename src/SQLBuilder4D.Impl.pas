@@ -483,7 +483,7 @@ begin
   Result := pValue.ToString;
 
   if (Result = EmptyStr) then
-    Exit(QuotedStr('Null'));
+    Exit('Null');
 
   ValidateSQLReservedWord(Result);
 
@@ -494,7 +494,7 @@ begin
       end;
     tkUnknown:
       begin
-        Result := QuotedStr('Null');
+        Result := 'Null';
       end;
     tkFloat:
       begin
