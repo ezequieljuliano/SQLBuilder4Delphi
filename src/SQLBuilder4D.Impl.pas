@@ -353,9 +353,11 @@ type
 
     function AllColumns(): ISQLSelect;
     function Column(const pColumnName: string): ISQLSelect; overload;
+    function Column(const pColumnName, pColumnAlias: string): ISQLSelect; overload;
     function Column(const pColumnName: string; const pCoalesce: ISQLCoalesce; const pColumnAlias: string = ''): ISQLSelect; overload;
     function Column(const pAggregate: ISQLAggregate): ISQLSelect; overload;
     function Column(const pAggregate: ISQLAggregate; const pCoalesce: ISQLCoalesce): ISQLSelect; overload;
+    function Alias(const pColumnAlias: string): ISQLSelect;
 
     function SubSelect(const pSelect: ISQLSelect; const pAlias: string): ISQLSelect; overload;
     function SubSelect(const pWhere: ISQLWhere; const pAlias: string): ISQLSelect; overload;
@@ -363,7 +365,9 @@ type
     function SubSelect(const pHaving: ISQLHaving; const pAlias: string): ISQLSelect; overload;
     function SubSelect(const pOrderBy: ISQLOrderBy; const pAlias: string): ISQLSelect; overload;
 
-    function From(const pTableName: string): ISQLSelect;
+    function From(const pTableName: string): ISQLSelect; overload;
+    function From(const pTableName, pTableAlias: string): ISQLSelect; overload;
+    function TableAlias(const pAlias: string): ISQLSelect;
     function Join(const pTableName, pJoinCriteria: string): ISQLSelect;
     function LeftOuterJoin(const pTableName, pJoinCriteria: string): ISQLSelect;
     function RightOuterJoin(const pTableName, pJoinCriteria: string): ISQLSelect;
@@ -1001,6 +1005,12 @@ begin
   Result := Self;
 end;
 
+function TSQLSelect.From(const pTableName, pTableAlias: string): ISQLSelect;
+begin
+  FFromTable.TableName := pTableName + ' ' + pTableAlias;
+  Result := Self;
+end;
+
 procedure TSQLSelect.AfterConstruction;
 begin
   inherited AfterConstruction;
@@ -1018,6 +1028,16 @@ begin
   FUnions := TList<ISQLUnion>.Create;
 end;
 
+function TSQLSelect.Alias(const pColumnAlias: string): ISQLSelect;
+var
+  vColumn: string;
+begin
+  vColumn := FColumns[FColumns.Count - 1];
+  if not ContainsText(vColumn, 'As') then
+    FColumns[FColumns.Count - 1] := vColumn + ' As ' + pColumnAlias;
+  Result := Self;
+end;
+
 function TSQLSelect.AllColumns: ISQLSelect;
 begin
   FColumns.Clear;
@@ -1031,6 +1051,19 @@ begin
   FreeAndNil(FJoinedTables);
   FreeAndNil(FUnions);
   inherited BeforeDestruction;
+end;
+
+function TSQLSelect.Column(const pColumnName, pColumnAlias: string): ISQLSelect;
+var
+  vColumn: string;
+begin
+  vColumn := pColumnName;
+
+  if not pColumnAlias.IsEmpty then
+    vColumn := vColumn + ' As ' + pColumnAlias;
+
+  FColumns.Add(vColumn);
+  Result := Self;
 end;
 
 function TSQLSelect.Column(const pColumnName: string; const pCoalesce: ISQLCoalesce; const pColumnAlias: string): ISQLSelect;
@@ -1181,6 +1214,12 @@ end;
 function TSQLSelect.SubSelect(const pSelect: ISQLSelect; const pAlias: string): ISQLSelect;
 begin
   FColumns.Add('(' + pSelect.ToString + ') As ' + pAlias);
+  Result := Self;
+end;
+
+function TSQLSelect.TableAlias(const pAlias: string): ISQLSelect;
+begin
+  FFromTable.TableName := FFromTable.TableName + ' ' + pAlias;
   Result := Self;
 end;
 

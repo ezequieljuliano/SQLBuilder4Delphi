@@ -262,9 +262,11 @@ type
 
     function AllColumns(): ISQLSelect;
     function Column(const pColumnName: string): ISQLSelect; overload;
+    function Column(const pColumnName, pColumnAlias: string): ISQLSelect; overload;
     function Column(const pColumnName: string; const pCoalesce: ISQLCoalesce; const pColumnAlias: string = ''): ISQLSelect; overload;
     function Column(const pAggregate: ISQLAggregate): ISQLSelect; overload;
     function Column(const pAggregate: ISQLAggregate; const pCoalesce: ISQLCoalesce): ISQLSelect; overload;
+    function Alias(const pColumnAlias: string): ISQLSelect;
 
     function SubSelect(const pSelect: ISQLSelect; const pAlias: string): ISQLSelect; overload;
     function SubSelect(const pWhere: ISQLWhere; const pAlias: string): ISQLSelect; overload;
@@ -272,7 +274,9 @@ type
     function SubSelect(const pHaving: ISQLHaving; const pAlias: string): ISQLSelect; overload;
     function SubSelect(const pOrderBy: ISQLOrderBy; const pAlias: string): ISQLSelect; overload;
 
-    function From(const pTableName: string): ISQLSelect;
+    function From(const pTableName: string): ISQLSelect; overload;
+    function From(const pTableName, pTableAlias: string): ISQLSelect; overload;
+    function TableAlias(const pAlias: string): ISQLSelect;
     function Join(const pTableName, pJoinCriteria: string): ISQLSelect;
     function LeftOuterJoin(const pTableName, pJoinCriteria: string): ISQLSelect;
     function RightOuterJoin(const pTableName, pJoinCriteria: string): ISQLSelect;

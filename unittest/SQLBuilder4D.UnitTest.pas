@@ -34,6 +34,8 @@ type
     procedure TestSQLParserSelect();
     procedure TestSQLStatementSaveToFile();
     procedure TestSQLClauseSaveToFile();
+    procedure TestSQLColumnAlias();
+    procedure TestSQLTableAlias();
   end;
 
 implementation
@@ -86,6 +88,42 @@ begin
   finally
     FreeAndNil(vStringList);
   end;
+end;
+
+procedure TTestSQLBuilder4D.TestSQLColumnAlias;
+const
+  cExpected =
+    'Select '
+    + sLineBreak +
+    ' C_Code As Code, C_Name As Name, C_Doc As Doc'
+    + sLineBreak +
+    ' From Customers';
+var
+  vOut: string;
+begin
+  vOut := TSQLBuilder.Select
+    .Column('C_Code', 'Code')
+    .Column('C_Name', 'Name')
+    .Column('C_Doc', 'Doc')
+    .From('Customers').ToString;
+
+  CheckEqualsString(cExpected, vOut);
+
+  vOut := TSQLBuilder.Select
+    .Column('C_Code').Alias('Code')
+    .Column('C_Name').Alias('Name')
+    .Column('C_Doc').Alias('Doc')
+    .From('Customers').ToString;
+
+  CheckEqualsString(cExpected, vOut);
+
+  vOut := TSQLBuilder.Select
+    .Column('C_Code', 'Code').Alias('Code')
+    .Column('C_Name', 'Name').Alias('Name')
+    .Column('C_Doc', 'Doc')
+    .From('Customers').ToString;
+
+  CheckEqualsString(cExpected, vOut);
 end;
 
 procedure TTestSQLBuilder4D.TestSQLDateTime;
@@ -1537,6 +1575,34 @@ begin
   finally
     FreeAndNil(vStringList);
   end;
+end;
+
+procedure TTestSQLBuilder4D.TestSQLTableAlias;
+const
+  cExpected =
+    'Select '
+    + sLineBreak +
+    ' C_Code As Code, C_Name As Name, C_Doc As Doc'
+    + sLineBreak +
+    ' From Customers C';
+var
+  vOut: string;
+begin
+  vOut := TSQLBuilder.Select
+    .Column('C_Code', 'Code')
+    .Column('C_Name', 'Name')
+    .Column('C_Doc', 'Doc')
+    .From('Customers', 'C').ToString;
+
+  CheckEqualsString(cExpected, vOut);
+
+  vOut := TSQLBuilder.Select
+    .Column('C_Code', 'Code')
+    .Column('C_Name', 'Name')
+    .Column('C_Doc', 'Doc')
+    .From('Customers').TableAlias('C').ToString;
+
+  CheckEqualsString(cExpected, vOut);
 end;
 
 procedure TTestSQLBuilder4D.TestSQLUpdate;
