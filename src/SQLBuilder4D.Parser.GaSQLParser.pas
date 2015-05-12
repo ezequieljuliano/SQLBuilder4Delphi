@@ -5,7 +5,19 @@ interface
 uses
   System.SysUtils,
   System.StrUtils,
-  SQLBuilder4D.Parser,
+  SQLBuilder4D.Parser;
+
+type
+
+  TGaSQLParserFactory = class sealed
+  public
+    class function Select(): ISQLParserSelect; overload; static;
+    class function Select(const pSQLCommand: string): ISQLParserSelect; overload; static;
+  end;
+
+implementation
+
+uses
   gaBasicSQLParser,
   gaAdvancedSQLParser,
   gaSQLExpressionParsers,
@@ -13,248 +25,255 @@ uses
 
 type
 
-  TGaSQLParserSelect = class(TInterfacedObject, ISQLParserSelect)
+  TGaSQLParser = class(TInterfacedObject, ISQLParser)
   strict private
-    FAdvParser: TgaAdvancedSQLParser;
+    FParser: TgaAdvancedSQLParser;
+  strict protected
+    function GetParser(): TgaAdvancedSQLParser;
   public
-    constructor Create();
-    destructor Destroy(); override;
+    constructor Create(const pSQLCommand: string);
+    destructor Destroy; override;
 
-    procedure Parse(const pSQLText: string);
-
-    function GetSelect(): string;
-    procedure SetSelect(const pSelectClause: string);
-    procedure AddOrSetSelect(const pSelectClause: string);
-
-    function GetFrom(): string;
-    procedure SetFrom(const pFromClause: string);
-    procedure AddOrSetFrom(const pFromClause: string);
-
-    function GetJoin(): string;
-    procedure SetJoin(const pJoinClause: string);
-    procedure AddOrSetJoin(const pJoinClause: string);
-
-    function GetWhere(): string;
-    procedure SetWhere(const pWhereClause: string);
-    procedure AddOrSetWhere(const pWhereClause: string);
-
-    function GetGroupBy(): string;
-    procedure SetGroupBy(const pGroupByClause: string);
-    procedure AddOrSetGroupBy(const pGroupByClause: string);
-
-    function GetHaving(): string;
-    procedure SetHaving(const pHavingClause: string);
-    procedure AddOrSetHaving(const pHavingClause: string);
-
-    function GetOrderBy(): string;
-    procedure SetOrderBy(const pOrderByClause: string);
-    procedure AddOrSetOrderBy(const pOrderByClause: string);
-
-    function GetSQLText(): string;
+    procedure Parse(const pSQLCommand: string);
+    function ToString(): string; override;
   end;
 
-implementation
+  TGaSQLParserSelect = class(TGaSQLParser, ISQLParserSelect)
+  strict private
+    function GetColumns(): string;
+    function GetFrom(): string;
+    function GetJoin(): string;
+    function GetWhere(): string;
+    function GetGroupBy(): string;
+    function GetHaving(): string;
+    function GetOrderBy(): string;
+    function GetExpression(const pDefaultExpression, pCurrentTerm: string; const pConnector: TSQLParserConnector): string;
+  public
+    function SetColumns(const pColumnsClause: string): ISQLParserSelect;
+    function AddColumns(const pColumnsTerm: string): ISQLParserSelect;
+
+    function SetFrom(const pFromClause: string): ISQLParserSelect;
+    function AddFrom(const pFromTerm: string): ISQLParserSelect;
+
+    function SetJoin(const pJoinClause: string): ISQLParserSelect;
+    function AddJoin(const pJoinTerm: string): ISQLParserSelect;
+
+    function SetWhere(const pWhereClause: string): ISQLParserSelect;
+    function AddWhere(const pWhereTerm: string; const pConnector: TSQLParserConnector = pcAnd): ISQLParserSelect;
+
+    function SetGroupBy(const pGroupByClause: string): ISQLParserSelect;
+    function AddGroupBy(const pGroupByTerm: string): ISQLParserSelect;
+
+    function SetHaving(const pHavingClause: string): ISQLParserSelect;
+    function AddHaving(const pHavingTerm: string; const pConnector: TSQLParserConnector = pcAnd): ISQLParserSelect;
+
+    function SetOrderBy(const pOrderByClause: string): ISQLParserSelect;
+    function AddOrderBy(const pOrderByTerm: string): ISQLParserSelect;
+
+    property Columns: string read GetColumns;
+    property From: string read GetFrom;
+    property Join: string read GetJoin;
+    property Where: string read GetWhere;
+    property GroupBy: string read GetGroupBy;
+    property Having: string read GetHaving;
+    property OrderBy: string read GetOrderBy;
+  end;
+
+  { TGaSQLParser }
+
+constructor TGaSQLParser.Create(const pSQLCommand: string);
+begin
+  FParser := TgaAdvancedSQLParser.Create(nil);
+  if not pSQLCommand.IsEmpty then
+    Parse(pSQLCommand);
+end;
+
+destructor TGaSQLParser.Destroy;
+begin
+  FreeAndNil(FParser);
+  inherited;
+end;
+
+function TGaSQLParser.GetParser: TgaAdvancedSQLParser;
+begin
+  Result := FParser;
+end;
+
+procedure TGaSQLParser.Parse(const pSQLCommand: string);
+begin
+  FParser.SQLText.Clear;
+  FParser.SQLText.Text := pSQLCommand;
+  FParser.Reset;
+  while not(FParser.TokenType = stEnd) do
+    FParser.NextToken;
+end;
+
+function TGaSQLParser.ToString: string;
+begin
+  Result := TgaSelectSQLStatement(FParser.CurrentStatement).AsString;
+end;
 
 { TGaSQLParserSelect }
 
-procedure TGaSQLParserSelect.AddOrSetFrom(const pFromClause: string);
-var
-  vFrom: string;
+function TGaSQLParserSelect.AddColumns(const pColumnsTerm: string): ISQLParserSelect;
 begin
-  vFrom := GetFrom();
-  if (vFrom <> EmptyStr) then
-    vFrom := vFrom + ', ' + pFromClause
+  SetColumns(GetExpression(GetColumns, pColumnsTerm, pcComma));
+  Result := Self;
+end;
+
+function TGaSQLParserSelect.AddFrom(const pFromTerm: string): ISQLParserSelect;
+begin
+  SetFrom(GetExpression(GetFrom, pFromTerm, pcComma));
+  Result := Self;
+end;
+
+function TGaSQLParserSelect.AddGroupBy(const pGroupByTerm: string): ISQLParserSelect;
+begin
+  SetGroupBy(GetExpression(GetGroupBy, pGroupByTerm, pcComma));
+  Result := Self;
+end;
+
+function TGaSQLParserSelect.AddHaving(const pHavingTerm: string;
+  const pConnector: TSQLParserConnector): ISQLParserSelect;
+begin
+  SetHaving(GetExpression(GetHaving, pHavingTerm, pConnector));
+  Result := Self;
+end;
+
+function TGaSQLParserSelect.AddJoin(const pJoinTerm: string): ISQLParserSelect;
+begin
+  SetJoin(GetExpression(GetJoin, pJoinTerm, pcNone));
+  Result := Self;
+end;
+
+function TGaSQLParserSelect.AddOrderBy(const pOrderByTerm: string): ISQLParserSelect;
+begin
+  SetOrderBy(GetExpression(GetOrderBy, pOrderByTerm, pcComma));
+  Result := Self;
+end;
+
+function TGaSQLParserSelect.AddWhere(const pWhereTerm: string;
+  const pConnector: TSQLParserConnector): ISQLParserSelect;
+begin
+  SetWhere(GetExpression(GetWhere, pWhereTerm, pConnector));
+  Result := Self;
+end;
+
+function TGaSQLParserSelect.GetColumns: string;
+begin
+  Result := EmptyStr;
+  if (TgaSelectSQLStatement(GetParser.CurrentStatement).StatementFields <> nil) then
+    Result := TgaSelectSQLStatement(GetParser.CurrentStatement).StatementFields.AsString;
+end;
+
+function TGaSQLParserSelect.GetExpression(const pDefaultExpression, pCurrentTerm: string;
+  const pConnector: TSQLParserConnector): string;
+begin
+  Result := pDefaultExpression;
+  if not Result.IsEmpty then
+  begin
+    case pConnector of
+      pcNone:
+        Result := Result + '' + pCurrentTerm;
+      pcAnd:
+        Result := Result + ' And (' + pCurrentTerm + ')';
+      pcOr:
+        Result := Result + ' Or (' + pCurrentTerm + ')';
+      pcComma:
+        Result := Result + ', ' + pCurrentTerm;
+    end;
+  end
   else
-    vFrom := pFromClause;
-  SetFrom(vFrom);
-end;
-
-procedure TGaSQLParserSelect.AddOrSetGroupBy(const pGroupByClause: string);
-var
-  vGroupBy: string;
-begin
-  vGroupBy := GetGroupBy();
-  if (vGroupBy <> EmptyStr) then
-    vGroupBy := vGroupBy + ', ' + pGroupByClause
-  else
-    vGroupBy := pGroupByClause;
-  SetGroupBy(vGroupBy);
-end;
-
-procedure TGaSQLParserSelect.AddOrSetHaving(const pHavingClause: string);
-var
-  vHaving: string;
-begin
-  vHaving := GetHaving();
-  if (vHaving <> EmptyStr) then
-    vHaving := vHaving + ' And (' + pHavingClause + ')'
-  else
-    vHaving := pHavingClause;
-  SetHaving(vHaving);
-end;
-
-procedure TGaSQLParserSelect.AddOrSetJoin(const pJoinClause: string);
-var
-  vJoin: string;
-begin
-  vJoin := GetJoin();
-  if (vJoin <> EmptyStr) then
-    vJoin := vJoin + pJoinClause
-  else
-    vJoin := pJoinClause;
-  SetJoin(vJoin);
-end;
-
-procedure TGaSQLParserSelect.AddOrSetOrderBy(const pOrderByClause: string);
-var
-  vOrderBy: string;
-begin
-  vOrderBy := GetOrderBy();
-  if (vOrderBy <> EmptyStr) then
-    vOrderBy := vOrderBy + ', ' + pOrderByClause
-  else
-    vOrderBy := pOrderByClause;
-  SetOrderBy(vOrderBy);
-end;
-
-procedure TGaSQLParserSelect.AddOrSetSelect(const pSelectClause: string);
-var
-  vSelect: string;
-begin
-  vSelect := GetSelect();
-  if (vSelect <> EmptyStr) then
-    vSelect := vSelect + ', ' + pSelectClause
-  else
-    vSelect := pSelectClause;
-  SetSelect(vSelect);
-end;
-
-procedure TGaSQLParserSelect.AddOrSetWhere(const pWhereClause: string);
-var
-  vWhere: string;
-begin
-  vWhere := GetWhere();
-  if (vWhere <> EmptyStr) then
-    vWhere := vWhere + ' And (' + pWhereClause + ')'
-  else
-    vWhere := pWhereClause;
-  SetWhere(vWhere);
-end;
-
-constructor TGaSQLParserSelect.Create;
-begin
-  FAdvParser := TgaAdvancedSQLParser.Create(nil);
-end;
-
-destructor TGaSQLParserSelect.Destroy;
-begin
-  FreeAndNil(FAdvParser);
-  inherited;
+    Result := pCurrentTerm;
 end;
 
 function TGaSQLParserSelect.GetFrom: string;
 begin
   Result := EmptyStr;
-  if (TgaSelectSQLStatement(FAdvParser.CurrentStatement).StatementTables <> nil) then
-    Result := TgaSelectSQLStatement(FAdvParser.CurrentStatement).StatementTables.AsString;
+  if (TgaSelectSQLStatement(GetParser.CurrentStatement).StatementTables <> nil) then
+    Result := TgaSelectSQLStatement(GetParser.CurrentStatement).StatementTables.AsString;
 end;
 
 function TGaSQLParserSelect.GetGroupBy: string;
 begin
   Result := EmptyStr;
-  if (TgaSelectSQLStatement(FAdvParser.CurrentStatement).GroupByClause <> nil) then
-    Result := TgaSelectSQLStatement(FAdvParser.CurrentStatement).GroupByClause.AsString;
+  if (TgaSelectSQLStatement(GetParser.CurrentStatement).GroupByClause <> nil) then
+    Result := TgaSelectSQLStatement(GetParser.CurrentStatement).GroupByClause.AsString;
 end;
 
 function TGaSQLParserSelect.GetHaving: string;
 begin
   Result := EmptyStr;
-  if (TgaSelectSQLStatement(FAdvParser.CurrentStatement).HavingClause <> nil) then
-    Result := TgaSelectSQLStatement(FAdvParser.CurrentStatement).HavingClause.AsString;
+  if (TgaSelectSQLStatement(GetParser.CurrentStatement).HavingClause <> nil) then
+    Result := TgaSelectSQLStatement(GetParser.CurrentStatement).HavingClause.AsString;
 end;
 
 function TGaSQLParserSelect.GetJoin: string;
 begin
   Result := EmptyStr;
-  if (TgaSelectSQLStatement(FAdvParser.CurrentStatement).JoinCaluses <> nil) then
-    Result := TgaSelectSQLStatement(FAdvParser.CurrentStatement).JoinCaluses.AsString;
+  if (TgaSelectSQLStatement(GetParser.CurrentStatement).JoinCaluses <> nil) then
+    Result := TgaSelectSQLStatement(GetParser.CurrentStatement).JoinCaluses.AsString;
 end;
 
 function TGaSQLParserSelect.GetOrderBy: string;
 begin
   Result := EmptyStr;
-  if (TgaSelectSQLStatement(FAdvParser.CurrentStatement).OrderByClause <> nil) then
-    Result := TgaSelectSQLStatement(FAdvParser.CurrentStatement).OrderByClause.AsString;
-end;
-
-function TGaSQLParserSelect.GetSelect: string;
-begin
-  Result := EmptyStr;
-  if (TgaSelectSQLStatement(FAdvParser.CurrentStatement).StatementFields <> nil) then
-    Result := TgaSelectSQLStatement(FAdvParser.CurrentStatement).StatementFields.AsString;
-end;
-
-function TGaSQLParserSelect.GetSQLText: string;
-begin
-  Result := TgaSelectSQLStatement(FAdvParser.CurrentStatement).AsString;
+  if (TgaSelectSQLStatement(GetParser.CurrentStatement).OrderByClause <> nil) then
+    Result := TgaSelectSQLStatement(GetParser.CurrentStatement).OrderByClause.AsString;
 end;
 
 function TGaSQLParserSelect.GetWhere: string;
 begin
   Result := EmptyStr;
-  if (TgaSelectSQLStatement(FAdvParser.CurrentStatement).WhereClause <> nil) then
-    Result := TgaSelectSQLStatement(FAdvParser.CurrentStatement).WhereClause.AsString;
+  if (TgaSelectSQLStatement(GetParser.CurrentStatement).WhereClause <> nil) then
+    Result := TgaSelectSQLStatement(GetParser.CurrentStatement).WhereClause.AsString;
 end;
 
-procedure TGaSQLParserSelect.Parse(const pSQLText: string);
+function TGaSQLParserSelect.SetColumns(const pColumnsClause: string): ISQLParserSelect;
 begin
-  FAdvParser.SQLText.Clear;
-  FAdvParser.SQLText.Text := pSQLText;
-  FAdvParser.Reset;
-  while not(FAdvParser.TokenType = stEnd) do
-    FAdvParser.NextToken;
+  TgaSelectSQLStatement(GetParser.CurrentStatement).StatementFields.AsString := ReplaceText(pColumnsClause, 'Select', EmptyStr);
 end;
 
-procedure TGaSQLParserSelect.SetFrom(const pFromClause: string);
+function TGaSQLParserSelect.SetFrom(const pFromClause: string): ISQLParserSelect;
 begin
-  TgaSelectSQLStatement(FAdvParser.CurrentStatement)
-    .StatementTables.AsString := ReplaceText(pFromClause, 'From', '');
+  TgaSelectSQLStatement(GetParser.CurrentStatement).StatementTables.AsString := ReplaceText(pFromClause, 'From', EmptyStr);
 end;
 
-procedure TGaSQLParserSelect.SetGroupBy(const pGroupByClause: string);
+function TGaSQLParserSelect.SetGroupBy(const pGroupByClause: string): ISQLParserSelect;
 begin
-  TgaSelectSQLStatement(FAdvParser.CurrentStatement)
-    .GroupByClause.AsString := ReplaceText(pGroupByClause, 'Group By', '');
+  TgaSelectSQLStatement(GetParser.CurrentStatement).GroupByClause.AsString := ReplaceText(pGroupByClause, 'Group By', EmptyStr);
 end;
 
-procedure TGaSQLParserSelect.SetHaving(const pHavingClause: string);
+function TGaSQLParserSelect.SetHaving(const pHavingClause: string): ISQLParserSelect;
 begin
-  TgaSelectSQLStatement(FAdvParser.CurrentStatement)
-    .HavingClause.AsString := ReplaceText(pHavingClause, 'Having', '');
+  TgaSelectSQLStatement(GetParser.CurrentStatement).HavingClause.AsString := ReplaceText(pHavingClause, 'Having', EmptyStr);
 end;
 
-procedure TGaSQLParserSelect.SetJoin(const pJoinClause: string);
+function TGaSQLParserSelect.SetJoin(const pJoinClause: string): ISQLParserSelect;
 begin
-  TgaSelectSQLStatement(FAdvParser.CurrentStatement)
-    .JoinCaluses.AsString := pJoinClause;
+  TgaSelectSQLStatement(GetParser.CurrentStatement).JoinCaluses.AsString := pJoinClause;
 end;
 
-procedure TGaSQLParserSelect.SetOrderBy(const pOrderByClause: string);
+function TGaSQLParserSelect.SetOrderBy(const pOrderByClause: string): ISQLParserSelect;
 begin
-  TgaSelectSQLStatement(FAdvParser.CurrentStatement)
-    .OrderByClause.AsString := ReplaceText(pOrderByClause, 'Order By', '');
+  TgaSelectSQLStatement(GetParser.CurrentStatement).OrderByClause.AsString := ReplaceText(pOrderByClause, 'Order By', EmptyStr);
 end;
 
-procedure TGaSQLParserSelect.SetSelect(const pSelectClause: string);
+function TGaSQLParserSelect.SetWhere(const pWhereClause: string): ISQLParserSelect;
 begin
-  TgaSelectSQLStatement(FAdvParser.CurrentStatement)
-    .StatementFields.AsString := ReplaceText(pSelectClause, 'Select', '');
+  TgaSelectSQLStatement(GetParser.CurrentStatement).WhereClause.AsString := ReplaceText(pWhereClause, 'Where', EmptyStr);
 end;
 
-procedure TGaSQLParserSelect.SetWhere(const pWhereClause: string);
+{ TGaSQLParserFactory }
+
+class function TGaSQLParserFactory.Select: ISQLParserSelect;
 begin
-  TgaSelectSQLStatement(FAdvParser.CurrentStatement)
-    .WhereClause.AsString := ReplaceText(pWhereClause, 'Where', '');
+  Result := TGaSQLParserFactory.Select(EmptyStr);
+end;
+
+class function TGaSQLParserFactory.Select(const pSQLCommand: string): ISQLParserSelect;
+begin
+  Result := TGaSQLParserSelect.Create(pSQLCommand);
 end;
 
 end.

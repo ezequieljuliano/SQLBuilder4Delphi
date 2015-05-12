@@ -1,4 +1,4 @@
-program SQLBuilder4DTests;
+program SQLBuilder4DParserTests;
 {
 
   Delphi DUnit Test Project
@@ -16,8 +16,9 @@ program SQLBuilder4DTests;
 
 uses
   DUnitTestRunner,
-  SQLBuilder4D in '..\src\SQLBuilder4D.pas',
-  SQLBuilder4D.UnitTest in 'SQLBuilder4D.UnitTest.pas';
+  SQLBuilder4D.Parser.UnitTest in 'SQLBuilder4D.Parser.UnitTest.pas',
+  SQLBuilder4D.Parser in '..\src\SQLBuilder4D.Parser.pas',
+  SQLBuilder4D.Parser.GaSQLParser in '..\src\SQLBuilder4D.Parser.GaSQLParser.pas';
 
 {$R *.RES}
 

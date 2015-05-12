@@ -6,14 +6,13 @@ uses
   TestFramework,
   System.Classes,
   System.SysUtils,
-  System.TypInfo,
-  SQLBuilder4D.Parser;
+  System.TypInfo;
 
 type
 
   TTestSQLBuilder4D = class(TTestCase)
-  strict private
-    procedure ValidateSQLInject();
+  private
+    procedure SQLInject();
   protected
     procedure SetUp; override;
     procedure TearDown; override;
@@ -25,30 +24,40 @@ type
     procedure TestSQLSelectDistinct();
     procedure TestSQLSelectColumnCoalesce();
     procedure TestSQLSelectAggregate();
-    procedure TestSQLInjection();
-    procedure TestSQLDelete();
-    procedure TestSQLUpdate();
+    procedure TestSQLSelectColumnCase();
+    procedure TestSQLSelectHaving();
+
     procedure TestSQLInsert();
-    procedure TestSQLDateTime();
+    procedure TestSQLUpdate();
+    procedure TestSQLDelete();
+
+    procedure TestSQLDateAndTime();
     procedure TestSQLFloat();
-    procedure TestSQLParserSelect();
-    procedure TestSQLStatementSaveToFile();
-    procedure TestSQLClauseSaveToFile();
-    procedure TestSQLColumnAlias();
-    procedure TestSQLTableAlias();
+    procedure TestSQLInjection();
+    procedure TestSQLToFile();
   end;
 
 implementation
 
-{ TTestSQLBuilder4D }
-
 uses
   SQLBuilder4D;
+
+{ TTestSQLBuilder4D }
 
 procedure TTestSQLBuilder4D.SetUp;
 begin
   inherited;
 
+end;
+
+procedure TTestSQLBuilder4D.SQLInject;
+begin
+  SQL.Select
+    .Column('C_Code')
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .Where('C_Code').Equal('Or')
 end;
 
 procedure TTestSQLBuilder4D.TearDown;
@@ -57,191 +66,110 @@ begin
 
 end;
 
-procedure TTestSQLBuilder4D.TestSQLClauseSaveToFile;
+procedure TTestSQLBuilder4D.TestSQLDateAndTime;
 const
-  cSQLFile = 'SQLFile.SQL';
+  cSelectDate = 'Select ' + sLineBreak +
+    ' *' + sLineBreak +
+    ' From Customers C' + sLineBreak +
+    ' Where (C.C_Date = ''01.01.2014'')';
 
-  cExpected_1 =
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
-    ' Where (C_Code = 1) And (C_Name <> ''Ezequiel'')' +
-    sLineBreak;
-var
-  vStringList: TStringList;
-begin
-  vStringList := TStringList.Create;
-  try
-    TSQLBuilder.Select
-      .Column('C_Code')
-      .Column('C_Name')
-      .Column('C_Doc')
-      .From('Customers')
-      .Where('C_Code').Equal(1)
-      ._And('C_Name').Different('Ezequiel')
-      .SaveToFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
-    vStringList.LoadFromFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
-    CheckEqualsString(cExpected_1, vStringList.Text);
-  finally
-    FreeAndNil(vStringList);
-  end;
-end;
+  cSelectDateTime = 'Select ' + sLineBreak +
+    ' *' + sLineBreak +
+    ' From Customers C' + sLineBreak +
+    ' Where (C.C_DateTime = ''01.01.2014 01:05:22'')';
 
-procedure TTestSQLBuilder4D.TestSQLColumnAlias;
-const
-  cExpected =
-    'Select '
-    + sLineBreak +
-    ' C_Code As Code, C_Name As Name, C_Doc As Doc'
-    + sLineBreak +
-    ' From Customers';
-var
-  vOut: string;
-begin
-  vOut := TSQLBuilder.Select
-    .Column('C_Code', 'Code')
-    .Column('C_Name', 'Name')
-    .Column('C_Doc', 'Doc')
-    .From('Customers').ToString;
-
-  CheckEqualsString(cExpected, vOut);
-
-  vOut := TSQLBuilder.Select
-    .Column('C_Code').Alias('Code')
-    .Column('C_Name').Alias('Name')
-    .Column('C_Doc').Alias('Doc')
-    .From('Customers').ToString;
-
-  CheckEqualsString(cExpected, vOut);
-
-  vOut := TSQLBuilder.Select
-    .Column('C_Code', 'Code').Alias('Code')
-    .Column('C_Name', 'Name').Alias('Name')
-    .Column('C_Doc', 'Doc')
-    .From('Customers').ToString;
-
-  CheckEqualsString(cExpected, vOut);
-end;
-
-procedure TTestSQLBuilder4D.TestSQLDateTime;
-const
-  cSelectDate =
-    'Select '
-    + sLineBreak +
-    ' *'
-    + sLineBreak +
-    ' From Customers C'
-    + sLineBreak +
-    ' Where (C.C_Date = ''01/01/2014'')';
-
-  cSelectDateTime =
-    'Select '
-    + sLineBreak +
-    ' *'
-    + sLineBreak +
-    ' From Customers C'
-    + sLineBreak +
-    ' Where (C.C_DateTime = ''01/01/2014 01:05:22'')';
-
-  cSelectTime =
-    'Select '
-    + sLineBreak +
-    ' *'
-    + sLineBreak +
-    ' From Customers C'
-    + sLineBreak +
+  cSelectTime = 'Select ' + sLineBreak +
+    ' *' + sLineBreak +
+    ' From Customers C' + sLineBreak +
     ' Where (C.C_Time = ''01:05:22'')';
 var
   vOut: string;
 begin
-  vOut := TSQLBuilder
-    .Select
+  vOut := SQL.Select
     .AllColumns
     .From('Customers C')
-    .Where('C.C_Date').Equal('01/01/2014')
+    .Where('C.C_Date').Equal('01.01.2014')
     .ToString;
 
-  CheckEqualsString(cSelectDate, vOut);
-
-  vOut := TSQLBuilder
-    .Select
+  vOut := SQL.Select
     .AllColumns
     .From('Customers C')
-    .Where('C.C_DateTime').Equal('01/01/2014 01:05:22')
+    .Where('C.C_Date').Equal(SQL.Value(StrToDate('01/01/2014')).Date)
     .ToString;
 
+  vOut := SQL.Select
+    .AllColumns
+    .From('Customers C')
+    .Where('C.C_DateTime').Equal('01.01.2014 01:05:22')
+    .ToString;
   CheckEqualsString(cSelectDateTime, vOut);
 
-  vOut := TSQLBuilder
-    .Select
+  vOut := SQL.Select
+    .AllColumns
+    .From('Customers C')
+    .Where('C.C_DateTime').Equal(SQL.Value(StrToDateTime('01/01/2014 01:05:22')).DateTime)
+    .ToString;
+  CheckEqualsString(cSelectDateTime, vOut);
+
+  vOut := SQL.Select
     .AllColumns
     .From('Customers C')
     .Where('C.C_Time').Equal('01:05:22')
     .ToString;
+  CheckEqualsString(cSelectTime, vOut);
 
+  vOut := SQL.Select
+    .AllColumns
+    .From('Customers C')
+    .Where('C.C_Time').Equal((SQL.Value(StrToDateTime('01:05:22')).Time))
+    .ToString;
   CheckEqualsString(cSelectTime, vOut);
 end;
 
 procedure TTestSQLBuilder4D.TestSQLDelete;
 const
-  cDeleteNormal =
-    'Delete From Customers';
-
-  cDeleteWithWhere =
-    'Delete From Customers'
-    + sLineBreak +
+  cDelete = 'Delete From Customers';
+  cDeleteWithWhere = 'Delete From Customers' + sLineBreak +
     ' Where (C_Code > 1) And (C_Name <> ''Ejm'') And ((C_Code In (1, 2, 3)) Or (C_Code < 10))';
 var
   vOut: string;
 begin
-  vOut :=
-    TSQLBuilder.Delete
-    .From('Customers').ToString;
-  CheckEqualsString(cDeleteNormal, vOut);
+  vOut := SQL.Delete.From('Customers').ToString;
+  CheckEqualsString(cDelete, vOut);
 
-  vOut :=
-    TSQLBuilder.Delete
-    .From('Customers')
+  vOut := SQL.Delete.From(SQL.Table('Customers')).ToString;
+  CheckEqualsString(cDelete, vOut);
+
+  vOut := SQL.Delete.From('Customers')
     .Where('C_Code').Greater(1)
-    ._And('C_Name').Different('Ejm')
-    ._And(
-    TSQLBuilder.Where.Column('C_Code').InList([1, 2, 3])
-    ._Or('C_Code').Less(10)
-    )
+    .&And('C_Name').Different('Ejm')
+    .&And(SQL.Where.Column('C_Code').InList([1, 2, 3])
+    .&Or('C_Code').Less(10))
     .ToString;
   CheckEqualsString(cDeleteWithWhere, vOut);
 end;
 
 procedure TTestSQLBuilder4D.TestSQLFloat;
 const
-  cSelectDate =
-    'Select '
-    + sLineBreak +
-    ' *'
-    + sLineBreak +
-    ' From Customers C'
-    + sLineBreak +
+  cSelect = 'Select ' + sLineBreak +
+    ' *' + sLineBreak +
+    ' From Customers C' + sLineBreak +
     ' Where (C.C_Value = 25.22)';
 var
   vOut: string;
 begin
-  vOut := TSQLBuilder
-    .Select
+  vOut := SQL.Select
     .AllColumns
     .From('Customers C')
     .Where('C.C_Value').Equal(25.22)
     .ToString;
-
-  CheckEqualsString(cSelectDate, vOut);
+  CheckEqualsString(cSelect, vOut);
 end;
 
 procedure TTestSQLBuilder4D.TestSQLInjection;
 begin
   CheckException(
-    ValidateSQLInject,
+    SQLInject,
     ESQLBuilderException
     );
 end;
@@ -249,349 +177,149 @@ end;
 procedure TTestSQLBuilder4D.TestSQLInsert;
 const
   cInsert =
-    'Insert Into Customers'
-    + sLineBreak +
-    ' (C_Code,'
-    + sLineBreak +
-    '  C_Name,'
-    + sLineBreak +
-    '  C_Doc)'
-    + sLineBreak +
-    ' Values'
-    + sLineBreak +
-    ' (1,'
-    + sLineBreak +
-    '  ''Ejm'','
-    + sLineBreak +
+    'Insert Into Customers' + sLineBreak +
+    ' (C_Code,' + sLineBreak +
+    '  C_Name,' + sLineBreak +
+    '  C_Doc)' + sLineBreak +
+    ' Values' + sLineBreak +
+    ' (1,'+ sLineBreak +
+    '  ''Ejm'','+ sLineBreak +
     '  58)';
 var
   vOut: string;
 begin
-  vOut :=
-    TSQLBuilder.Insert
-    .Into('Customers')
+  vOut := SQL.Insert.Into('Customers')
     .ColumnValue('C_Code', 1)
     .ColumnValue('C_Name', 'Ejm')
     .ColumnValue('C_Doc', 58)
     .ToString;
   CheckEqualsString(cInsert, vOut);
 
-  vOut :=
-    TSQLBuilder.Insert
-    .Into('Customers')
+  vOut := SQL.Insert.Into(SQL.Table('Customers'))
+    .ColumnValue('C_Code', SQL.Value(1))
+    .ColumnValue('C_Name', SQL.Value('Ejm'))
+    .ColumnValue('C_Doc', 58)
+    .ToString;
+  CheckEqualsString(cInsert, vOut);
+
+  vOut := SQL.Insert.Into('Customers')
     .Columns(['C_Code', 'C_Name', 'C_Doc'])
     .Values([1, 'Ejm', 58])
     .ToString;
   CheckEqualsString(cInsert, vOut);
-end;
 
-procedure TTestSQLBuilder4D.TestSQLParserSelect;
-const
-  cSQL =
-    'Select '
-    + sLineBreak +
-    '   Customers.C_Cod, '
-    + sLineBreak +
-    '   Customers.C_Name, '
-    + sLineBreak +
-    '   Customers.C_Doc, '
-    + sLineBreak +
-    '   Sum(Customers.C_Limit) as Limite  '
-    + sLineBreak +
-    'From Customers '
-    + sLineBreak +
-    'Inner Join Places On (Customers.P_Code = Places.P_Code) '
-    + sLineBreak +
-    'Where '
-    + sLineBreak +
-    '    (Customers.C_Cod = 10) And '
-    + sLineBreak +
-    '    (Customers.C_Name = ''Ezequiel'') '
-    + sLineBreak +
-    'Group By '
-    + sLineBreak +
-    '     Customers.C_Cod, '
-    + sLineBreak +
-    '     Customers.C_Name, '
-    + sLineBreak +
-    '     Customers.C_Doc '
-    + sLineBreak +
-    'Having '
-    + sLineBreak +
-    '    (Customers.C_Cod > 0) '
-    + sLineBreak +
-    'Order By '
-    + sLineBreak +
-    '     Customers.C_Cod ';
-
-  cSQLSelect =
-    'Customers.C_Cod, '
-    + sLineBreak +
-    '   Customers.C_Name, '
-    + sLineBreak +
-    '   Customers.C_Doc, '
-    + sLineBreak +
-    '   Sum(Customers.C_Limit) as Limite  '
-    + sLineBreak;
-
-  cSQLFrom =
-    ' Customers '
-    + sLineBreak;
-
-  cSQLJoin =
-    'Inner Join Places On (Customers.P_Code = Places.P_Code) '
-    + sLineBreak;
-
-  cSQLWhere =
-    '(Customers.C_Cod = 10) And '
-    + sLineBreak +
-    '    (Customers.C_Name = ''Ezequiel'') '
-    + sLineBreak;
-
-  cSQLGroupBy =
-    'Customers.C_Cod, '
-    + sLineBreak +
-    '     Customers.C_Name, '
-    + sLineBreak +
-    '     Customers.C_Doc '
-    + sLineBreak;
-
-  cSQLHaving =
-    '(Customers.C_Cod > 0) '
-    + sLineBreak;
-
-  cSQLOrderBy =
-    'Customers.C_Cod '
-    + sLineBreak;
-
-  cSetSQLSelect =
-    'Customers.C_Name, '
-    + sLineBreak +
-    '   Customers.C_Cod, '
-    + sLineBreak +
-    '   Customers.C_Doc, '
-    + sLineBreak +
-    '   Sum(Customers.C_Value) as Value  '
-    + sLineBreak;
-
-  cSetSQLFrom =
-    ' Customers C '
-    + sLineBreak;
-
-  cSetSQLJoin =
-    'Left Outer Join Places On (Customers.P_Code = Places.P_Code) '
-    + sLineBreak;
-
-  cSetSQLWhere =
-    '(Customers.C_Cod = 500) And '
-    + sLineBreak +
-    '    (Customers.C_Name = ''Juliano'') '
-    + sLineBreak;
-
-  cSetSQLGroupBy =
-    'Customers.C_Name, '
-    + sLineBreak +
-    '     Customers.C_Cod, '
-    + sLineBreak +
-    '     Customers.C_Doc '
-    + sLineBreak;
-
-  cSetSQLHaving =
-    '(Customers.C_Doc > 0) '
-    + sLineBreak;
-
-  cSetSQLOrderBy =
-    'Customers.C_Doc '
-    + sLineBreak;
-
-  cSQLValidateSet =
-    'Select '
-    + sLineBreak +
-    '   Customers.C_Name, '
-    + sLineBreak +
-    '   Customers.C_Cod, '
-    + sLineBreak +
-    '   Customers.C_Doc, '
-    + sLineBreak +
-    '   Sum(Customers.C_Value) as Value  '
-    + sLineBreak +
-    'From Customers C '
-    + sLineBreak +
-    'Left Outer Join Places On (Customers.P_Code = Places.P_Code) '
-    + sLineBreak +
-    'where ' +
-    '(Customers.C_Cod = 500) And '
-    + sLineBreak +
-    '    (Customers.C_Name = ''Juliano'') '
-    + sLineBreak +
-    'group by ' +
-    'Customers.C_Name, '
-    + sLineBreak +
-    '     Customers.C_Cod, '
-    + sLineBreak +
-    '     Customers.C_Doc '
-    + sLineBreak +
-    'having ' +
-    '(Customers.C_Doc > 0) '
-    + sLineBreak +
-    'order by ' +
-    'Customers.C_Doc '
-    + sLineBreak;
-
-  cSQLValidateAddOrSet =
-    'Select '
-    + sLineBreak +
-    '   Customers.C_Cod, '
-    + sLineBreak +
-    '   Customers.C_Name, '
-    + sLineBreak +
-    '   Customers.C_Doc, '
-    + sLineBreak +
-    '   Sum(Customers.C_Limit) as Limite  '
-    + sLineBreak +
-    ',' +
-    ' Customers.C_Test ' +
-    'From Customers '
-    + sLineBreak +
-    ',' +
-    ' Customers S ' +
-    'Inner Join Places On (Customers.P_Code = Places.P_Code) '
-    + sLineBreak +
-    'Left Outer Join Places On (Customers.P_Code = Places.P_Code) ' +
-    'where ' +
-    '(Customers.C_Cod = 10) And '
-    + sLineBreak +
-    '    (Customers.C_Name = ''Ezequiel'') '
-    + sLineBreak +
-    ' And ((Customers.C_Cod = 700)) ' +
-    'group by ' +
-    'Customers.C_Cod, '
-    + sLineBreak +
-    '     Customers.C_Name, '
-    + sLineBreak +
-    '     Customers.C_Doc '
-    + sLineBreak +
-    ',' +
-    ' Customers.C_Value ' +
-    'having ' +
-    '(Customers.C_Cod > 0) '
-    + sLineBreak +
-    ' And ((Customers.C_Doc < 300)) ' +
-    'order by ' +
-    'Customers.C_Cod '
-    + sLineBreak +
-    ', Customers.C_Doc ';
-var
-  vSQLParserSelect: ISQLParserSelect;
-begin
-  vSQLParserSelect := TSQLParserFactory.GetSelectInstance(prGaSQLParser);
-
-  vSQLParserSelect.Parse(cSQL);
-  CheckEqualsString(cSQLSelect, vSQLParserSelect.GetSelect);
-  CheckEqualsString(cSQLFrom, vSQLParserSelect.GetFrom);
-  CheckEqualsString(cSQLJoin, vSQLParserSelect.GetJoin);
-  CheckEqualsString(cSQLWhere, vSQLParserSelect.GetWhere);
-  CheckEqualsString(cSQLGroupBy, vSQLParserSelect.GetGroupBy);
-  CheckEqualsString(cSQLHaving, vSQLParserSelect.GetHaving);
-  CheckEqualsString(cSQLOrderBy, vSQLParserSelect.GetOrderBy);
-
-  vSQLParserSelect.SetSelect(cSetSQLSelect);
-  vSQLParserSelect.SetFrom(cSetSQLFrom);
-  vSQLParserSelect.SetJoin(cSetSQLJoin);
-  vSQLParserSelect.SetWhere(cSetSQLWhere);
-  vSQLParserSelect.SetGroupBy(cSetSQLGroupBy);
-  vSQLParserSelect.SetHaving(cSetSQLHaving);
-  vSQLParserSelect.SetOrderBy(cSetSQLOrderBy);
-  CheckEqualsString(cSQLValidateSet, vSQLParserSelect.GetSQLText);
-
-  vSQLParserSelect.Parse(cSQL);
-  vSQLParserSelect.AddOrSetSelect('Customers.C_Test');
-  vSQLParserSelect.AddOrSetFrom('Customers S');
-  vSQLParserSelect.AddOrSetJoin('Left Outer Join Places On (Customers.P_Code = Places.P_Code)');
-  vSQLParserSelect.AddOrSetWhere('(Customers.C_Cod = 700)');
-  vSQLParserSelect.AddOrSetGroupBy('Customers.C_Value');
-  vSQLParserSelect.AddOrSetHaving('(Customers.C_Doc < 300)');
-  vSQLParserSelect.AddOrSetOrderBy('Customers.C_Doc');
-  CheckEqualsString(cSQLValidateAddOrSet, vSQLParserSelect.GetSQLText);
+  vOut := SQL.Insert.Into('Customers')
+    .Columns(['C_Code', 'C_Name', 'C_Doc'])
+    .Values([SQL.Value(1), SQL.Value('Ejm'), SQL.Value(58)])
+    .ToString;
+  CheckEqualsString(cInsert, vOut);
 end;
 
 procedure TTestSQLBuilder4D.TestSQLSelect;
 const
   cSelectAllFields =
-    'Select '
-    + sLineBreak +
-    ' *'
-    + sLineBreak +
+    'Select ' + sLineBreak +
+    ' *' + sLineBreak +
     ' From Customers';
 
+  cSelectAllFieldsWithTables =
+    'Select ' + sLineBreak +
+    ' *' + sLineBreak +
+    ' From Customers, Places';
+
   cSelectFields =
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
+    'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
     ' From Customers';
 
   cSelectWithJoins =
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
-    ' Join Places On (Customers.P_Code = Places.P_Code)'
-    + sLineBreak +
-    ' Join Places On (Customers.P_Code = Places.P_Code)'
-    + sLineBreak +
-    ' Left Outer Join Places On (Customers.P_Code = Places.P_Code)'
-    + sLineBreak +
-    ' Right Outer Join Places On (Customers.P_Code = Places.P_Code)';
+    'Select '+ sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
+    ' Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Left Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Right Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Full Join Places On (Customers.P_Code = Places.P_Code)';
+
+  cSelectWithJoins_2 =
+    'Select '+ sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
+    ' Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' And (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Or (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' And (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Or (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Left Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' And (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Or (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Right Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' And (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Or (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Full Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' And (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Or (Customers.P_Code = Places.P_Code)';
+
+  cSelectWithJoins_3 =
+    'Select '+ sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
+    ' Join Places On (0 = 0)' + sLineBreak +
+    ' Join Places On (''EJM'' = ''EJM'')' + sLineBreak +
+    ' Left Join Places On (1 = 1)' + sLineBreak +
+    ' Right Join Places On (''JM'' = ''JM'')' + sLineBreak +
+    ' Full Join Places On (2 = 2)';
 
   cSelectComplete =
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
-    ' Join Places On (Customers.P_Code = Places.P_Code)'
-    + sLineBreak +
-    ' Join Places On (Customers.P_Code = Places.P_Code)'
-    + sLineBreak +
-    ' Left Outer Join Places On (Customers.P_Code = Places.P_Code)'
-    + sLineBreak +
-    ' Right Outer Join Places On (Customers.P_Code = Places.P_Code)'
-    + sLineBreak +
-    ' Group By C_Code, C_Name'
-    + sLineBreak +
-    ' Having ((C_Code > 0))'
-    + sLineBreak +
+    'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
+    ' Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Left Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Right Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Group By C_Code, C_Name' + sLineBreak +
+    ' Having ((C_Code > 0))' + sLineBreak +
     ' Order By C_Code, C_Doc';
 
   cSelectSubSelect =
-    'Select '
-    + sLineBreak +
+    'Select ' + sLineBreak +
     ' C_Code, C_Name,' +
-    ' (Select '
-    + sLineBreak +
-    ' C.C_Doc'
-    + sLineBreak +
-    ' From Customers C'
-    + sLineBreak +
-    ' Where (C.C_Code = Customers.C_Code)) As Sub'
-    + sLineBreak +
+    ' (Select ' + sLineBreak +
+    ' C.C_Doc' + sLineBreak +
+    ' From Customers C' + sLineBreak +
+    ' Where (C.C_Code = Customers.C_Code)) As Sub' + sLineBreak +
     ' From Customers';
 var
   vOut: string;
 begin
-  vOut :=
-    TSQLBuilder.Select
+  vOut := SQL.Select
     .AllColumns
     .From('Customers')
     .ToString;
   CheckEqualsString(cSelectAllFields, vOut);
 
-  vOut :=
-    TSQLBuilder.Select
+  vOut := SQL.Select
+    .AllColumns
+    .From(SQL.From(SQL.Table('Customers')))
+    .ToString;
+  CheckEqualsString(cSelectAllFields, vOut);
+
+  vOut := SQL.Select
+    .AllColumns
+    .From(['Customers', 'Places'])
+    .ToString;
+  CheckEqualsString(cSelectAllFieldsWithTables, vOut);
+
+  vOut := SQL.Select
+    .AllColumns
+    .From([SQL.From(SQL.Table('Customers')), SQL.From(SQL.Table('Places'))])
+    .ToString;
+  CheckEqualsString(cSelectAllFieldsWithTables, vOut);
+
+  vOut := SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
@@ -599,78 +327,135 @@ begin
     .ToString;
   CheckEqualsString(cSelectFields, vOut);
 
-  vOut :=
-    TSQLBuilder.Select
+  vOut := SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Join('Places', '(Customers.P_Code = Places.P_Code)')
     .Join('Places', '(Customers.P_Code = Places.P_Code)')
-    .LeftOuterJoin('Places', '(Customers.P_Code = Places.P_Code)')
-    .RightOuterJoin('Places', '(Customers.P_Code = Places.P_Code)')
+    .LeftJoin('Places', '(Customers.P_Code = Places.P_Code)')
+    .RightJoin('Places', '(Customers.P_Code = Places.P_Code)')
+    .FullJoin('Places', '(Customers.P_Code = Places.P_Code)')
     .ToString;
   CheckEqualsString(cSelectWithJoins, vOut);
 
-  vOut :=
-    TSQLBuilder.Select
+  vOut := SQL.Select
+    .Column('C_Code')
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .Join(SQL.Join('Places').Condition(SQL.JoinTerm.Left('Customers.P_Code').Op(opEqual).Right('Places.P_Code')))
+    .Join(SQL.Join('Places').Condition(SQL.JoinTerm.Left('Customers.P_Code').Op(opEqual).Right('Places.P_Code')))
+    .LeftJoin(SQL.LeftJoin('Places').Condition(SQL.JoinTerm.Left('Customers.P_Code').Op(opEqual).Right('Places.P_Code')))
+    .RightJoin(SQL.RightJoin('Places').Condition(SQL.JoinTerm.Left('Customers.P_Code').Op(opEqual).Right('Places.P_Code')))
+    .FullJoin(SQL.FullJoin('Places').Condition(SQL.JoinTerm.Left('Customers.P_Code').Op(opEqual).Right('Places.P_Code')))
+    .ToString;
+  CheckEqualsString(cSelectWithJoins, vOut);
+
+  vOut := SQL.Select
+    .Column('C_Code')
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .Join(SQL.Join('Places').Condition(SQL.JoinTerm.Left('Customers.P_Code').Op(opEqual).Right('Places.P_Code'))
+    .&And(SQL.JoinTerm.Left('Customers.P_Code').Op(opEqual).Right('Places.P_Code'))
+    .&Or(SQL.JoinTerm.Left('Customers.P_Code').Op(opEqual).Right('Places.P_Code')))
+    .Join(SQL.Join('Places').Condition(SQL.JoinTerm.Left('Customers.P_Code').Op(opEqual).Right('Places.P_Code'))
+    .&And(SQL.JoinTerm.Left('Customers.P_Code').Op(opEqual).Right('Places.P_Code'))
+    .&Or(SQL.JoinTerm.Left('Customers.P_Code').Op(opEqual).Right('Places.P_Code')))
+    .LeftJoin(SQL.LeftJoin('Places').Condition(SQL.JoinTerm.Left('Customers.P_Code').Op(opEqual).Right('Places.P_Code'))
+    .&And(SQL.JoinTerm.Left('Customers.P_Code').Op(opEqual).Right('Places.P_Code'))
+    .&Or(SQL.JoinTerm.Left('Customers.P_Code').Op(opEqual).Right('Places.P_Code')))
+    .RightJoin(SQL.RightJoin('Places').Condition(SQL.JoinTerm.Left('Customers.P_Code').Op(opEqual).Right('Places.P_Code'))
+    .&And(SQL.JoinTerm.Left('Customers.P_Code').Op(opEqual).Right('Places.P_Code'))
+    .&Or(SQL.JoinTerm.Left('Customers.P_Code').Op(opEqual).Right('Places.P_Code')))
+    .FullJoin(SQL.FullJoin('Places').Condition(SQL.JoinTerm.Left('Customers.P_Code').Op(opEqual).Right('Places.P_Code'))
+    .&And(SQL.JoinTerm.Left('Customers.P_Code').Op(opEqual).Right('Places.P_Code'))
+    .&Or(SQL.JoinTerm.Left('Customers.P_Code').Op(opEqual).Right('Places.P_Code')))
+    .ToString;
+  CheckEqualsString(cSelectWithJoins_2, vOut);
+
+  vOut := SQL.Select
+    .Column('C_Code')
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .Join(SQL.Join('Places').Condition(SQL.JoinTerm.Left(SQL.Value(0)).Op(opEqual).Right(SQL.Value(0))))
+    .Join(SQL.Join('Places').Condition(SQL.JoinTerm.Left(SQL.Value('EJM')).Op(opEqual).Right(SQL.Value('EJM'))))
+    .LeftJoin(SQL.LeftJoin('Places').Condition(SQL.JoinTerm.Left(SQL.Value(1)).Op(opEqual).Right(SQL.Value(1))))
+    .RightJoin(SQL.RightJoin('Places').Condition(SQL.JoinTerm.Left(SQL.Value('JM')).Op(opEqual).Right(SQL.Value('JM'))))
+    .FullJoin(SQL.FullJoin('Places').Condition(SQL.JoinTerm.Left(SQL.Value(2)).Op(opEqual).Right(SQL.Value(2))))
+    .ToString;
+  CheckEqualsString(cSelectWithJoins_3, vOut);
+
+  vOut := SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Join('Places', '(Customers.P_Code = Places.P_Code)')
     .Join('Places', '(Customers.P_Code = Places.P_Code)')
-    .LeftOuterJoin('Places', '(Customers.P_Code = Places.P_Code)')
-    .RightOuterJoin('Places', '(Customers.P_Code = Places.P_Code)')
+    .LeftJoin('Places', '(Customers.P_Code = Places.P_Code)')
+    .RightJoin('Places', '(Customers.P_Code = Places.P_Code)')
     .GroupBy.Column('C_Code').Column('C_Name')
-    .Having.Aggregate('(C_Code > 0)')
+    .Having.Expression('(C_Code > 0)')
     .OrderBy.Column('C_Code').Column('C_Doc')
     .ToString;
   CheckEqualsString(cSelectComplete, vOut);
 
-  vOut :=
-    TSQLBuilder.Select
+  vOut := SQL.Select
+    .Column('C_Code')
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .Join(SQL.Join('Places').Condition(SQL.JoinTerm.Left('Customers.P_Code').Op(opEqual).Right('Places.P_Code')))
+    .Join(SQL.Join('Places').Condition(SQL.JoinTerm.Left('Customers.P_Code').Op(opEqual).Right('Places.P_Code')))
+    .LeftJoin(SQL.LeftJoin('Places').Condition(SQL.JoinTerm.Left('Customers.P_Code').Op(opEqual).Right('Places.P_Code')))
+    .RightJoin(SQL.RightJoin('Places').Condition(SQL.JoinTerm.Left('Customers.P_Code').Op(opEqual).Right('Places.P_Code')))
+    .GroupBy(SQL.GroupBy.Column('C_Code').Column('C_Name'))
+    .Having(SQL.Having.Expression('(C_Code > 0)'))
+    .OrderBy(SQL.OrderBy.Column('C_Code').Column('C_Doc'))
+    .ToString;
+  CheckEqualsString(cSelectComplete, vOut);
+
+  vOut := SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Join('Places', '(Customers.P_Code = Places.P_Code)')
     .Join('Places', '(Customers.P_Code = Places.P_Code)')
-    .LeftOuterJoin('Places', '(Customers.P_Code = Places.P_Code)')
-    .RightOuterJoin('Places', '(Customers.P_Code = Places.P_Code)')
-    .GroupBy(TSQLBuilder.GroupBy.Column('C_Code').Column('C_Name'))
-    .Having(TSQLBuilder.Having.Aggregate('(C_Code > 0)'))
-    .OrderBy(TSQLBuilder.OrderBy.Column('C_Code').Column('C_Doc'))
+    .LeftJoin('Places', '(Customers.P_Code = Places.P_Code)')
+    .RightJoin('Places', '(Customers.P_Code = Places.P_Code)')
+    .GroupBy(SQL.GroupBy(['C_Code', 'C_Name']))
+    .Having(SQL.Having(['(C_Code > 0)']))
+    .OrderBy(SQL.OrderBy(['C_Code', 'C_Doc']))
     .ToString;
   CheckEqualsString(cSelectComplete, vOut);
 
-  vOut :=
-    TSQLBuilder.Select
-    .Column('C_Code')
-    .Column('C_Name')
-    .Column('C_Doc')
-    .From('Customers')
-    .Join('Places', '(Customers.P_Code = Places.P_Code)')
-    .Join('Places', '(Customers.P_Code = Places.P_Code)')
-    .LeftOuterJoin('Places', '(Customers.P_Code = Places.P_Code)')
-    .RightOuterJoin('Places', '(Customers.P_Code = Places.P_Code)')
-    .GroupBy(['C_Code', 'C_Name'])
-    .Having(['(C_Code > 0)'])
-    .OrderBy(['C_Code', 'C_Doc'])
-    .ToString;
-  CheckEqualsString(cSelectComplete, vOut);
-
-  vOut :=
-    TSQLBuilder.Select
+  vOut := SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .SubSelect(
-    TSQLBuilder.
-    Select.Column('C.C_Doc')
+    SQL.Select
+    .Column('C.C_Doc')
     .From('Customers C')
-    .Where('C.C_Code').ColumnCriterion(opEqual, 'Customers.C_Code'),
-    'Sub'
-    )
+    .Where('C.C_Code').Expression(opEqual, SQL.Value('Customers.C_Code').Column),
+    'Sub')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cSelectSubSelect, vOut);
+
+  vOut := SQL.Select
+    .Column('C_Code')
+    .Column('C_Name')
+    .SubSelect(
+    SQL.Select
+    .Column('C.C_Doc')
+    .From('Customers C')
+    .Where('C.C_Code').Equal(SQL.Value('Customers.C_Code').Column),
+    'Sub')
     .From('Customers')
     .ToString;
   CheckEqualsString(cSelectSubSelect, vOut);
@@ -678,67 +463,58 @@ end;
 
 procedure TTestSQLBuilder4D.TestSQLSelectAggregate;
 const
-  cSelect_1 =
-    'Select '
-    + sLineBreak +
-    ' Sum(C_Code * 1), C_Name, C_Doc'
-    + sLineBreak +
+  cSelect_1 = 'Select ' + sLineBreak +
+    ' Sum(C_Code * 1), C_Name, C_Doc' + sLineBreak +
     ' From Customers';
 
-  cSelect_2 =
-    'Select '
-    + sLineBreak +
-    ' Sum(C_Code * 1) As CodeM, C_Name, C_Doc'
-    + sLineBreak +
+  cSelect_2 = 'Select ' + sLineBreak +
+    ' Sum(C_Code * 1) As CodeM, C_Name, C_Doc' + sLineBreak +
     ' From Customers';
 
-  cSelect_3 =
-    'Select '
-    + sLineBreak +
-    ' Sum(Coalesce(C_Code * 1,0)) As CodeM, C_Name, C_Doc'
-    + sLineBreak +
+  cSelect_3 = 'Select ' + sLineBreak +
+    ' Sum(Coalesce(C_Code * 1,0)) As CodeM, C_Name, C_Doc' + sLineBreak +
     ' From Customers';
 
-  cSelect_4 =
-    'Select '
-    + sLineBreak +
-    ' Coalesce(Sum(Coalesce(C_Code * 1,0)),0) As CodeM, C_Name, C_Doc'
-    + sLineBreak +
+  cSelect_4 = 'Select ' + sLineBreak +
+    ' Coalesce(Sum(Coalesce(C_Code * 1,0)),0) As CodeM, C_Name, C_Doc' + sLineBreak +
     ' From Customers';
 var
   vOut: string;
 begin
-  vOut :=
-    TSQLBuilder.Select
-    .Column(
-    TSQLBuilder.Aggregate
-    .AggFunction(aggSum).AggExpression('C_Code * 1')
-    )
+  vOut := SQL.Select
+    .Column(SQL.Aggregate(aggSum, 'C_Code * 1'))
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .ToString;
   CheckEqualsString(cSelect_1, vOut);
 
-  vOut :=
-    TSQLBuilder.Select
-    .Column(
-    TSQLBuilder.Aggregate
-    .AggFunction(aggSum).AggExpression('C_Code * 1').AggAlias('CodeM')
-    )
+  vOut := SQL.Select
+    .Column(SQL.Aggregate.Sum.Expression('C_Code * 1'))
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cSelect_1, vOut);
+
+  vOut := SQL.Select
+    .Column(SQL.Aggregate(aggSum, 'C_Code * 1').Alias('CodeM'))
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .ToString;
   CheckEqualsString(cSelect_2, vOut);
 
-  vOut :=
-    TSQLBuilder.Select
-    .Column(
-    TSQLBuilder.Aggregate
-    .AggFunction(aggSum).AggExpression('C_Code * 1').AggAlias('CodeM').AggCoalesce(TSQLBuilder.Coalesce.Value(0)),
-    TSQLBuilder.Coalesce.Value(0)
-    )
+  vOut := SQL.Select
+    .Column(SQL.Aggregate(aggSum, SQL.Coalesce('C_Code * 1', 0)).Alias('CodeM'))
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cSelect_3, vOut);
+
+  vOut := SQL.Select
+    .Column(SQL.Coalesce(SQL.Aggregate(aggSum, SQL.Coalesce('C_Code * 1', 0)), 0).Alias('CodeM'))
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
@@ -746,36 +522,112 @@ begin
   CheckEqualsString(cSelect_4, vOut);
 end;
 
-procedure TTestSQLBuilder4D.TestSQLSelectColumnCoalesce;
+procedure TTestSQLBuilder4D.TestSQLSelectColumnCase;
 const
-  cSelect_1 =
-    'Select '
-    + sLineBreak +
-    ' Coalesce(C_Code,0), C_Name, C_Doc'
-    + sLineBreak +
+  cSelect_1 = 'Select ' + sLineBreak +
+    ' Case C_Code' + sLineBreak +
+    '  When 1 Then 2' + sLineBreak +
+    '  When 2 Then 3' + sLineBreak +
+    '  Else 4' + sLineBreak +
+    ' End, C_Name' + sLineBreak +
     ' From Customers';
 
-  cSelect_2 =
-    'Select '
-    + sLineBreak +
-    ' Coalesce(C_Code,0) As Code, C_Name, C_Doc'
-    + sLineBreak +
+  cSelect_2 = 'Select ' + sLineBreak +
+    ' Case C_Code' + sLineBreak +
+    '  When 1 Then 2' + sLineBreak +
+    '  When 2 Then 3' + sLineBreak +
+    '  Else 4' + sLineBreak +
+    ' End As Code, C_Name' + sLineBreak +
+    ' From Customers';
+
+  cSelect_3 = 'Select ' + sLineBreak +
+    ' Case Upper(C_Name)' + sLineBreak +
+    '  When ''EJM'' Then ''EZE''' + sLineBreak +
+    '  When ''MJM'' Then ''JMS''' + sLineBreak +
+    '  Else ''KLM''' + sLineBreak +
+    ' End As Name, C_Code' + sLineBreak +
+    ' From Customers';
+
+  cSelect_4 = 'Select ' + sLineBreak +
+    ' Case Lower(C_Name)' + sLineBreak +
+    '  When ''ejm'' Then ''eze''' + sLineBreak +
+    '  When ''mjm'' Then ''jms''' + sLineBreak +
+    '  Else ''klm''' + sLineBreak +
+    ' End As Name, C_Code' + sLineBreak +
+    ' From Customers';
+
+  cSelect_5 = 'Select ' + sLineBreak +
+    ' Case ' + sLineBreak +
+    '  When ListPrice =  0 Then ''Mfg item - not for resale''' + sLineBreak +
+    '  When ListPrice < 50 Then ''Under $50''' + sLineBreak +
+    '  Else ''Over $1000''' + sLineBreak +
+    ' End As Desc, ProductNumber' + sLineBreak +
+    ' From Product';
+var
+  vOut: string;
+begin
+  vOut := SQL.Select
+    .Column(SQL.&Case('C_Code').&When(1).&Then(2).&When(2).&Then(3).&Else(4).&End)
+    .Column('C_Name')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cSelect_1, vOut);
+
+  vOut := SQL.Select
+    .Column(SQL.&Case('C_Code').&When(1).&Then(2).&When(2).&Then(3).&Else(4).Alias('Code'))
+    .Column('C_Name')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cSelect_2, vOut);
+
+  vOut := SQL.Select
+    .Column(SQL.&Case(SQL.Value('C_Name').Column.Lower).&When('ejm').&Then('eze').&When('mjm').&Then('jms').&Else('klm').Alias('Name'))
+    .Column('C_Code')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cSelect_4, vOut);
+
+  vOut := SQL.Select
+    .Column(SQL.&Case
+    .&When(SQL.Value('ListPrice =  0').Expression).&Then('Mfg item - not for resale')
+    .&When(SQL.Value('ListPrice < 50').Expression).&Then('Under $50')
+    .&Else('Over $1000').Alias('Desc'))
+    .Column('ProductNumber')
+    .From('Product')
+    .ToString;
+  CheckEqualsString(cSelect_5, vOut);
+end;
+
+procedure TTestSQLBuilder4D.TestSQLSelectColumnCoalesce;
+const
+  cSelect_1 = 'Select ' + sLineBreak +
+    ' Coalesce(C_Code,0), C_Name, C_Doc' + sLineBreak +
+    ' From Customers';
+
+  cSelect_2 = 'Select ' + sLineBreak +
+    ' Coalesce(C_Code,0) As Code, C_Name, C_Doc' + sLineBreak +
     ' From Customers';
 var
   vOut: string;
 begin
-  vOut :=
-    TSQLBuilder.Select
-    .Column('C_Code', TSQLBuilder.Coalesce.Value(0))
+  vOut := SQL.Select
+    .Column(SQL.Coalesce('C_Code', 0))
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .ToString;
   CheckEqualsString(cSelect_1, vOut);
 
-  vOut :=
-    TSQLBuilder.Select
-    .Column('C_Code', TSQLBuilder.Coalesce.Value(0), 'Code')
+  vOut := SQL.Select
+    .Column(SQL.Coalesce.Expression('C_Code').Value(0).Alias('Code'))
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cSelect_2, vOut);
+
+  vOut := SQL.Select
+    .Column(SQL.Coalesce('C_Code', 0).Alias('Code'))
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
@@ -785,185 +637,216 @@ end;
 
 procedure TTestSQLBuilder4D.TestSQLSelectDistinct;
 const
-  cSelect_1 =
-    'Select Distinct '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
+  cSelectDistinct = 'Select Distinct ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
     ' From Customers';
 var
   vOut: string;
 begin
-  vOut :=
-    TSQLBuilder.Select
+  vOut := SQL.Select
     .Distinct
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .ToString;
+  CheckEqualsString(cSelectDistinct, vOut);
+end;
+
+procedure TTestSQLBuilder4D.TestSQLSelectHaving;
+const
+  cSelect_1 =
+    'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
+    ' Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Left Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Right Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Group By C_Code, C_Name' + sLineBreak +
+    ' Having (Sum(C_Code) > 0)' + sLineBreak +
+    ' Order By C_Code, C_Doc';
+
+  cSelect_2 =
+    'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
+    ' Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Left Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Right Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Group By C_Code, C_Name' + sLineBreak +
+    ' Having (Count(C_Code) <> 0)' + sLineBreak +
+    ' Order By C_Code, C_Doc';
+
+  cSelect_3 =
+    'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
+    ' Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Left Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Right Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Group By C_Code, C_Name' + sLineBreak +
+    ' Having (Count(C_Code) > 0) And (Count(C_Code) < 0)' + sLineBreak +
+    ' Order By C_Code, C_Doc';
+var
+  vOut: string;
+begin
+  vOut := SQL.Select
+    .Column('C_Code')
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .Join('Places', '(Customers.P_Code = Places.P_Code)')
+    .Join('Places', '(Customers.P_Code = Places.P_Code)')
+    .LeftJoin('Places', '(Customers.P_Code = Places.P_Code)')
+    .RightJoin('Places', '(Customers.P_Code = Places.P_Code)')
+    .GroupBy.Column('C_Code').Column('C_Name')
+    .Having.Expression(SQL.AggCondition(SQL.Aggregate.Sum.Expression('C_Code'), opGreater, 0))
+    .OrderBy.Column('C_Code').Column('C_Doc')
+    .ToString;
   CheckEqualsString(cSelect_1, vOut);
+
+  vOut := SQL.Select
+    .Column('C_Code')
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .Join('Places', '(Customers.P_Code = Places.P_Code)')
+    .Join('Places', '(Customers.P_Code = Places.P_Code)')
+    .LeftJoin('Places', '(Customers.P_Code = Places.P_Code)')
+    .RightJoin('Places', '(Customers.P_Code = Places.P_Code)')
+    .GroupBy.Column('C_Code').Column('C_Name')
+    .Having(SQL.Having(SQL.AggCondition(SQL.Aggregate.Count.Expression('C_Code'), opDifferent, SQL.Value(0))))
+    .OrderBy.Column('C_Code').Column('C_Doc')
+    .ToString;
+  CheckEqualsString(cSelect_2, vOut);
+
+  vOut := SQL.Select
+    .Column('C_Code')
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .Join('Places', '(Customers.P_Code = Places.P_Code)')
+    .Join('Places', '(Customers.P_Code = Places.P_Code)')
+    .LeftJoin('Places', '(Customers.P_Code = Places.P_Code)')
+    .RightJoin('Places', '(Customers.P_Code = Places.P_Code)')
+    .GroupBy.Column('C_Code').Column('C_Name')
+    .Having
+    .Expression(SQL.AggCondition(SQL.Aggregate.Count.Expression('C_Code'), opGreater, 0))
+    .Expression(SQL.AggCondition(SQL.Aggregate.Count.Expression('C_Code'), opLess, 0))
+    .OrderBy.Column('C_Code').Column('C_Doc')
+    .ToString;
+  CheckEqualsString(cSelect_3, vOut);
+
+  vOut := SQL.Select
+    .Column('C_Code')
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .Join('Places', '(Customers.P_Code = Places.P_Code)')
+    .Join('Places', '(Customers.P_Code = Places.P_Code)')
+    .LeftJoin('Places', '(Customers.P_Code = Places.P_Code)')
+    .RightJoin('Places', '(Customers.P_Code = Places.P_Code)')
+    .GroupBy.Column('C_Code').Column('C_Name')
+    .Having(SQL.Having([
+    SQL.AggCondition(SQL.Aggregate.Count.Expression('C_Code'), opGreater, 0),
+    SQL.AggCondition(SQL.Aggregate.Count.Expression('C_Code'), opLess, 0)
+    ]))
+    .OrderBy.Column('C_Code').Column('C_Doc')
+    .ToString;
+  CheckEqualsString(cSelect_3, vOut);
 end;
 
 procedure TTestSQLBuilder4D.TestSQLSelectUnion;
 const
-  cSelect_1 =
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
-    'Union'
-    + sLineBreak +
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
+  cSelect_1 = 'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
+    'Union' + sLineBreak +
+    'Select '+ sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
     ' From Customers';
 
-  cSelect_2 =
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
-    'Union All'
-    + sLineBreak +
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
+  cSelect_2 = 'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
+    'Union All' + sLineBreak +
+    'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
     ' From Customers';
 
-  cSelect_3 =
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
-    ' Where (C_Code = 1)'
-    + sLineBreak +
-    'Union'
-    + sLineBreak +
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
+  cSelect_3 = 'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
+    ' Where (C_Code = 1)' + sLineBreak +
+    'Union' + sLineBreak +
+    'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
     ' Where (C_Code = 1)';
 
-  cSelect_4 =
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
-    ' Where (C_Code = 1)'
-    + sLineBreak +
-    'Union All'
-    + sLineBreak +
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
+  cSelect_4 = 'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
+    ' Where (C_Code = 1)' + sLineBreak +
+    'Union All' + sLineBreak +
+    'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
     ' Where (C_Code = 1)';
 
-  cSelect_5 =
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
-    ' Where (C_Code = 1)'
-    + sLineBreak +
-    ' Group By C_Code'
-    + sLineBreak +
-    'Union All'
-    + sLineBreak +
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
-    ' Where (C_Code = 1)'
-    + sLineBreak +
+  cSelect_5 = 'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
+    ' Where (C_Code = 1)' + sLineBreak +
+    ' Group By C_Code' + sLineBreak +
+    'Union All' + sLineBreak +
+    'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
+    ' Where (C_Code = 1)' + sLineBreak +
     ' Group By C_Code';
 
-  cSelect_6 =
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
-    ' Where (C_Code = 1)'
-    + sLineBreak +
-    ' Group By C_Code'
-    + sLineBreak +
-    ' Having ((C_Code > 0))'
-    + sLineBreak +
-    'Union All'
-    + sLineBreak +
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
-    ' Where (C_Code = 1)'
-    + sLineBreak +
-    ' Group By C_Code'
-    + sLineBreak +
+  cSelect_6 = 'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
+    ' Where (C_Code = 1)' + sLineBreak +
+    ' Group By C_Code' + sLineBreak +
+    ' Having ((C_Code > 0))' + sLineBreak +
+    'Union All' + sLineBreak +
+    'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
+    ' Where (C_Code = 1)' + sLineBreak +
+    ' Group By C_Code' + sLineBreak +
     ' Having ((C_Code > 0))';
 
-  cSelect_7 =
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
-    ' Where (C_Code = 1)'
-    + sLineBreak +
-    ' Group By C_Code'
-    + sLineBreak +
-    ' Having ((C_Code > 0))'
-    + sLineBreak +
-    'Union All'
-    + sLineBreak +
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
-    ' Where (C_Code = 1)'
-    + sLineBreak +
-    ' Group By C_Code'
-    + sLineBreak +
-    ' Having ((C_Code > 0))'
-    + sLineBreak +
+  cSelect_7 = 'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
+    ' Where (C_Code = 1)' + sLineBreak +
+    ' Group By C_Code' + sLineBreak +
+    ' Having ((C_Code > 0))' + sLineBreak +
+    'Union All' + sLineBreak +
+    'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
+    ' Where (C_Code = 1)' + sLineBreak +
+    ' Group By C_Code' + sLineBreak +
+    ' Having ((C_Code > 0))' + sLineBreak +
     ' Order By C_Code';
 var
   vOut: string;
 begin
-  vOut :=
-    TSQLBuilder.Select
+  vOut := SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Union(
-    TSQLBuilder.Select
+    SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
@@ -972,14 +855,13 @@ begin
     .ToString;
   CheckEqualsString(cSelect_1, vOut);
 
-  vOut :=
-    TSQLBuilder.Select
+  vOut := SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Union(
-    TSQLBuilder.Select
+    SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
@@ -988,15 +870,14 @@ begin
     .ToString;
   CheckEqualsString(cSelect_2, vOut);
 
-  vOut :=
-    TSQLBuilder.Select
+  vOut := SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Where('C_Code').Equal(1)
     .Union(
-    TSQLBuilder.Select
+    SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
@@ -1006,14 +887,14 @@ begin
   CheckEqualsString(cSelect_3, vOut);
 
   vOut :=
-    TSQLBuilder.Select
+    SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Where('C_Code').Equal(1)
     .Union(
-    TSQLBuilder.Select
+    SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
@@ -1023,104 +904,88 @@ begin
   CheckEqualsString(cSelect_4, vOut);
 
   vOut :=
-    TSQLBuilder.Select
+    SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Where('C_Code').Equal(1)
-    .GroupBy(['C_Code'])
+    .GroupBy(SQL.GroupBy(['C_Code']))
     .Union(
-    TSQLBuilder.Select
+    SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Where('C_Code').Equal(1)
-    .GroupBy(['C_Code']), utUnionAll)
+    .GroupBy(SQL.GroupBy(['C_Code'])), utUnionAll)
     .ToString;
   CheckEqualsString(cSelect_5, vOut);
 
   vOut :=
-    TSQLBuilder.Select
+    SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Where('C_Code').Equal(1)
-    .GroupBy(['C_Code'])
-    .Having(['(C_Code > 0)'])
+    .GroupBy(SQL.GroupBy(['C_Code']))
+    .Having(SQL.Having(['(C_Code > 0)']))
     .Union(
-    TSQLBuilder.Select
+    SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Where('C_Code').Equal(1)
-    .GroupBy(['C_Code'])
-    .Having(['(C_Code > 0)']), utUnionAll)
+    .GroupBy(SQL.GroupBy(['C_Code']))
+    .Having(SQL.Having(['(C_Code > 0)'])), utUnionAll)
     .ToString;
   CheckEqualsString(cSelect_6, vOut);
 
   vOut :=
-    TSQLBuilder.Select
+    SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Where('C_Code').Equal(1)
-    .GroupBy(['C_Code'])
-    .Having(['(C_Code > 0)'])
+    .GroupBy(SQL.GroupBy(['C_Code']))
+    .Having(SQL.Having(['(C_Code > 0)']))
     .Union(
-    TSQLBuilder.Select
+    SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Where('C_Code').Equal(1)
-    .GroupBy(['C_Code'])
-    .Having(['(C_Code > 0)']), utUnionAll)
-    .OrderBy(['C_Code'])
+    .GroupBy(SQL.GroupBy(['C_Code']))
+    .Having(SQL.Having(['(C_Code > 0)'])), utUnionAll)
+    .OrderBy(SQL.OrderBy(['C_Code']))
     .ToString;
   CheckEqualsString(cSelect_7, vOut);
 end;
 
 procedure TTestSQLBuilder4D.TestSQLSelectWhere;
 const
-  cExpected_1 =
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
+  cExpected_1 = 'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
     ' Where (C_Code = 1) And (C_Name <> ''Ezequiel'')';
 
-  cExpected_2 =
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
+  cExpected_2 = 'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
     ' Where (C_Code = 1) And ((C_Code = 2) And (C_Name <> ''Juliano''))';
 
-  cExpected_3 =
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
+  cExpected_3 = 'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
     ' Where (C_Code = 1) Or ((C_Code = 2) And (C_Name <> ''Juliano''))';
 
-  cExpected_4 =
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
+  cExpected_4 = 'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
     ' Where (C_Code = 1) Or ((C_Code = 2) And (C_Name <> ''Juliano'') Or (C_Code < 5))' +
     ' And (C_Code > 0) And (C_Code < 0) And (C_Code >= 0) Or (C_Code <= 0)' +
     ' And (C_Name Like ''%Ejm%'') Or (C_Name Like ''%Ejm'') Or (C_Name Like ''Ejm%'')' +
@@ -1128,554 +993,505 @@ const
     ' And (C_Doc Is Null) Or (C_Name Is Not Null)' +
     ' Or (C_Code In (1, 2, 3)) And (C_Date Between ''01.01.2013'' And ''01.01.2013'')';
 
-  cExpected_5 =
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
-    ' Where (C_Code = 1) Or ((C_Code = 2) And (C_Name <> ''Juliano''))'
-    + sLineBreak +
-    ' Group By C_Code, C_Name'
-    + sLineBreak +
-    ' Having ((C_Code > 0))'
-    + sLineBreak +
+  cExpected_4_1 = 'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
+    ' Where ((C_Code = 2) And (C_Name <> ''Juliano'') Or (C_Code < 5)) Or (C_Code = 1)' +
+    ' And (C_Code > 0) And (C_Code < 0) And (C_Code >= 0) Or (C_Code <= 0)' +
+    ' And (C_Name Like ''%Ejm%'') Or (C_Name Like ''%Ejm'') Or (C_Name Like ''Ejm%'')' +
+    ' Or (C_Name Not Like ''%Ejm%'') Or (C_Name Not Like ''%Ejm'') Or (C_Name Not Like ''Ejm%'')' +
+    ' And (C_Doc Is Null) Or (C_Name Is Not Null)' +
+    ' Or (C_Code In (1, 2, 3)) And (C_Date Between ''01.01.2013'' And ''01.01.2013'')';
+
+  cExpected_5 = 'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
+    ' Where (C_Code = 1) Or ((C_Code = 2) And (C_Name <> ''Juliano''))' + sLineBreak +
+    ' Group By C_Code, C_Name' + sLineBreak +
+    ' Having ((C_Code > 0))' + sLineBreak +
     ' Order By C_Code, C_Doc';
 
-  cExpected_6 =
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
+  cExpected_6 = 'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
     ' Where (C_Code = 1)' +
     ' And ((C_Name Like ''Ejm'') Or (C_Name Like ''Mje'') Or (C_Name Like ''Jme''))' +
     ' And ((C_Name Like ''Ejm%'') Or (C_Name Like ''Mje%'') Or (C_Name Like ''Jme%''))' +
     ' And ((C_Name Like ''%Ejm'') Or (C_Name Like ''%Mje'') Or (C_Name Like ''%Jme''))' +
     ' And ((C_Name Like ''%Ejm%'') Or (C_Name Like ''%Mje%'') Or (C_Name Like ''%Jme%''))';
 
-  cExpected_7 =
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
+  cExpected_7 = 'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
     ' Where ((C_Name Like ''Ejm'') Or (C_Name Like ''Mje'') Or (C_Name Like ''Jme''))' +
     ' And ((C_Name Like ''Ejm%'') Or (C_Name Like ''Mje%'') Or (C_Name Like ''Jme%''))' +
     ' And ((C_Name Like ''%Ejm'') Or (C_Name Like ''%Mje'') Or (C_Name Like ''%Jme''))' +
     ' And ((C_Name Like ''%Ejm%'') Or (C_Name Like ''%Mje%'') Or (C_Name Like ''%Jme%''))';
 
   cExpected_8 =
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
+    'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
     ' Where (C_Code = 1)' +
     ' Or (C_Code Not In (1, 2, 3))';
 var
   vOut: string;
 begin
-  vOut :=
-    TSQLBuilder.Select
+  vOut := SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Where('C_Code').Equal(1)
-    ._And('C_Name').Different('Ezequiel')
+    .&And('C_Name').Different('Ezequiel')
     .ToString;
   CheckEqualsString(cExpected_1, vOut);
 
-  vOut :=
-    TSQLBuilder.Select
+  vOut := SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
-    .Where('C_Code').Criterion(opEqual, 1)
-    ._And('C_Name').Criterion(opDifferent, 'Ezequiel')
+    .Where('C_Code').Expression(opEqual, 1)
+    .&And('C_Name').Expression(opDifferent, 'Ezequiel')
     .ToString;
   CheckEqualsString(cExpected_1, vOut);
 
-  vOut :=
-    TSQLBuilder.Select
+  vOut := SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Where('C_Code').Equal(1)
-    ._And(
-    TSQLBuilder.Where.Column('C_Code').Equal(2)._And('C_Name').Different('Juliano')
-    )
+    .&And(SQL.Where('C_Code').Equal(2).&And('C_Name').Different('Juliano'))
     .ToString;
   CheckEqualsString(cExpected_2, vOut);
 
-  vOut :=
-    TSQLBuilder.Select
+  vOut := SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Where('C_Code').Equal(1)
-    ._And(
-    TSQLBuilder.Where.Column('C_Code').Criterion(opEqual, 2)._And('C_Name').Criterion(opDifferent, 'Juliano')
-    )
+    .&And(SQL.Where.Column('C_Code').Expression(opEqual, 2).&And('C_Name').Expression(opDifferent, 'Juliano'))
     .ToString;
   CheckEqualsString(cExpected_2, vOut);
 
-  vOut :=
-    TSQLBuilder.Select
+  vOut := SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Where('C_Code').Equal(1)
-    ._Or(
-    TSQLBuilder.Where.Column('C_Code').Equal(2)._And('C_Name').Different('Juliano')
-    )
+    .&Or(SQL.Where.Column('C_Code').Equal(2).&And('C_Name').Different('Juliano'))
     .ToString;
   CheckEqualsString(cExpected_3, vOut);
 
-  vOut :=
-    TSQLBuilder.Select
+  vOut := SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Where('C_Code').Equal(1)
-    ._Or(
-    TSQLBuilder.Where.Column('C_Code').Equal(2)
-    ._And('C_Name').Different('Juliano')
-    ._Or('C_Code').Less(5)
-    )
-    ._And('C_Code').Greater(0)
-    ._And('C_Code').Less(0)
-    ._And('C_Code').GreaterOrEqual(0)
-    ._Or('C_Code').LessOrEqual(0)
-    ._And('C_Name').Like('Ejm', loContaining)
-    ._Or('C_Name').Like('Ejm', loEnding)
-    ._Or('C_Name').Like('Ejm', loStarting)
-    ._Or('C_Name').NotLike('Ejm', loContaining)
-    ._Or('C_Name').NotLike('Ejm', loEnding)
-    ._Or('C_Name').NotLike('Ejm', loStarting)
-    ._And('C_Doc').IsNull
-    ._Or('C_Name').IsNotNull
-    ._Or('C_Code').InList([1, 2, 3])
-    ._And('C_Date').Between('01.01.2013', '01.01.2013')
+    .&Or(SQL.Where('C_Code').Equal(2).&And('C_Name').Different('Juliano').&Or('C_Code').Less(5))
+    .&And('C_Code').Greater(0)
+    .&And('C_Code').Less(0)
+    .&And('C_Code').GreaterOrEqual(0)
+    .&Or('C_Code').LessOrEqual(0)
+    .&And('C_Name').Like('Ejm', loContaining)
+    .&Or('C_Name').Like('Ejm', loEnding)
+    .&Or('C_Name').Like('Ejm', loStarting)
+    .&Or('C_Name').NotLike('Ejm', loContaining)
+    .&Or('C_Name').NotLike('Ejm', loEnding)
+    .&Or('C_Name').NotLike('Ejm', loStarting)
+    .&And('C_Doc').IsNull
+    .&Or('C_Name').IsNotNull
+    .&Or('C_Code').InList([1, 2, 3])
+    .&And('C_Date').Between('01.01.2013', '01.01.2013')
     .ToString;
   CheckEqualsString(cExpected_4, vOut);
 
-  vOut :=
-    TSQLBuilder.Select
+  vOut := SQL.Select
+    .Column('C_Code')
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .Where(SQL.Where('C_Code').Equal(2).&And('C_Name').Different('Juliano').&Or('C_Code').Less(5))
+    .&Or('C_Code').Equal(1)
+    .&And('C_Code').Greater(0)
+    .&And('C_Code').Less(0)
+    .&And('C_Code').GreaterOrEqual(0)
+    .&Or('C_Code').LessOrEqual(0)
+    .&And('C_Name').Like('Ejm', loContaining)
+    .&Or('C_Name').Like('Ejm', loEnding)
+    .&Or('C_Name').Like('Ejm', loStarting)
+    .&Or('C_Name').NotLike('Ejm', loContaining)
+    .&Or('C_Name').NotLike('Ejm', loEnding)
+    .&Or('C_Name').NotLike('Ejm', loStarting)
+    .&And('C_Doc').IsNull
+    .&Or('C_Name').IsNotNull
+    .&Or('C_Code').InList([1, 2, 3])
+    .&And('C_Date').Between('01.01.2013', '01.01.2013')
+    .ToString;
+  CheckEqualsString(cExpected_4_1, vOut);
+
+  vOut := SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Where('C_Code').Equal(1)
-    ._Or(
-    TSQLBuilder.Where.Column('C_Code').Equal(2)._And('C_Name').Different('Juliano')
-    )
-    .GroupBy(['C_Code', 'C_Name'])
-    .Having(['(C_Code > 0)'])
-    .OrderBy(['C_Code', 'C_Doc'])
+    .&Or(SQL.Where('C_Code').Equal(2).&And('C_Name').Different('Juliano').&Or('C_Code').Less(5))
+    .&And('C_Code').Greater(0)
+    .&And('C_Code').Less(0)
+    .&And('C_Code').GreaterOrEqual(0)
+    .&Or('C_Code').LessOrEqual(0)
+    .&And('C_Name').Like('Ejm', loContaining)
+    .&Or('C_Name').Like('Ejm', loEnding)
+    .&Or('C_Name').Like('Ejm', loStarting)
+    .&Or('C_Name').NotLike('Ejm', loContaining)
+    .&Or('C_Name').NotLike('Ejm', loEnding)
+    .&Or('C_Name').NotLike('Ejm', loStarting)
+    .&And('C_Doc').Expression(opIsNull)
+    .&Or('C_Name').Expression(opNotNull)
+    .&Or('C_Code').InList([1, 2, 3])
+    .&And('C_Date').Between('01.01.2013', '01.01.2013')
+    .ToString;
+  CheckEqualsString(cExpected_4, vOut);
+
+  vOut := SQL.Select
+    .Column('C_Code')
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .Where('C_Code').Equal(1)
+    .&Or(SQL.Where('C_Code').Equal(2).&And('C_Name').Different('Juliano').&Or('C_Code').Less(5))
+    .&And('C_Code').Greater(SQL.Value(0))
+    .&And('C_Code').Less(SQL.Value(0))
+    .&And('C_Code').GreaterOrEqual(SQL.Value(0))
+    .&Or('C_Code').LessOrEqual(SQL.Value(0))
+    .&And('C_Name').Like(SQL.Value('Ejm').Like(loContaining))
+    .&Or('C_Name').Like(SQL.Value('Ejm').Like(loEnding))
+    .&Or('C_Name').Like(SQL.Value('Ejm').Like(loStarting))
+    .&Or('C_Name').NotLike(SQL.Value('Ejm').Like(loContaining))
+    .&Or('C_Name').NotLike(SQL.Value('Ejm').Like(loEnding))
+    .&Or('C_Name').NotLike(SQL.Value('Ejm').Like(loStarting))
+    .&And('C_Doc').IsNull
+    .&Or('C_Name').IsNotNull
+    .&Or('C_Code').InList([1, 2, 3])
+    .&And('C_Date').Between(SQL.Value(StrToDate('01/01/2013')).Date, SQL.Value(StrToDate('01/01/2013')).Date)
+    .ToString;
+  CheckEqualsString(cExpected_4, vOut);
+
+  vOut := SQL.Select
+    .Column('C_Code')
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .Where('C_Code').Equal(1)
+    .&Or(SQL.Where('C_Code').Equal(2).&And('C_Name').Different('Juliano'))
+    .GroupBy(SQL.GroupBy(['C_Code', 'C_Name']))
+    .Having(SQL.Having(['(C_Code > 0)']))
+    .OrderBy(SQL.OrderBy(['C_Code', 'C_Doc']))
     .ToString;
   CheckEqualsString(cExpected_5, vOut);
 
-  vOut :=
-    TSQLBuilder.Select
+  vOut := SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Where('C_Code').Equal(1)
-    ._And('C_Name').Like(['Ejm', 'Mje', 'Jme'], loEqual)
-    ._And('C_Name').Like(['Ejm', 'Mje', 'Jme'], loStarting)
-    ._And('C_Name').Like(['Ejm', 'Mje', 'Jme'], loEnding)
-    ._And('C_Name').Like(['Ejm', 'Mje', 'Jme'], loContaining)
+    .&And('C_Name').Like(['Ejm', 'Mje', 'Jme'], loEqual)
+    .&And('C_Name').Like(['Ejm', 'Mje', 'Jme'], loStarting)
+    .&And('C_Name').Like(['Ejm', 'Mje', 'Jme'], loEnding)
+    .&And('C_Name').Like(['Ejm', 'Mje', 'Jme'], loContaining)
     .ToString;
   CheckEqualsString(cExpected_6, vOut);
 
-  vOut :=
-    TSQLBuilder.Select
+  vOut := SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Where('C_Name').Like(['Ejm', 'Mje', 'Jme'], loEqual)
-    ._And('C_Name').Like(['Ejm', 'Mje', 'Jme'], loStarting)
-    ._And('C_Name').Like(['Ejm', 'Mje', 'Jme'], loEnding)
-    ._And('C_Name').Like(['Ejm', 'Mje', 'Jme'], loContaining)
+    .&And('C_Name').Like(['Ejm', 'Mje', 'Jme'], loStarting)
+    .&And('C_Name').Like(['Ejm', 'Mje', 'Jme'], loEnding)
+    .&And('C_Name').Like(['Ejm', 'Mje', 'Jme'], loContaining)
     .ToString;
   CheckEqualsString(cExpected_7, vOut);
 
-  vOut :=
-    TSQLBuilder.Select
+  vOut := SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Where('C_Code').Equal(1)
-    ._Or('C_Code').NotInList([1, 2, 3])
+    .&Or('C_Code').NotInList([1, 2, 3])
     .ToString;
   CheckEqualsString(cExpected_8, vOut);
 end;
 
 procedure TTestSQLBuilder4D.TestSQLSelectWhereCaseInSensitive;
 const
-  cExpected_1 =
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
-    ' Where (C_Code = 1) And (Upper(C_Name) <> Upper(''Ezequiel''))';
+  cExpected_1 = 'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
+    ' Where (C_Code = 1) And (Lower(C_Name) <> Lower(''Ezequiel''))';
 
-  cExpected_2 =
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
-    ' Where (C_Code = 1) And ((C_Code = 2) And (Upper(C_Name) <> Upper(''Juliano'')))';
+  cExpected_2 = 'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
+    ' Where (C_Code = 1) And ((C_Code = 2) And (Lower(C_Name) <> Lower(''Juliano'')))';
 
-  cExpected_3 =
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
-    ' Where (C_Code = 1) Or ((C_Code = 2) And (Upper(C_Name) <> Upper(''Juliano'')))';
+  cExpected_3 = 'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
+    ' Where (C_Code = 1) Or ((C_Code = 2) And (Lower(C_Name) <> Lower(''Juliano'')))';
 
-  cExpected_4 =
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
-    ' Where (C_Code = 1) Or ((C_Code = 2) And (Upper(C_Name) <> Upper(''Juliano'')) Or (C_Code < 5))' +
+  cExpected_4 = 'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
+    ' Where (C_Code = 1) Or ((C_Code = 2) And (Lower(C_Name) <> Lower(''Juliano'')) Or (C_Code < 5))' +
     ' And (C_Code > 0) And (C_Code < 0) And (C_Code >= 0) Or (C_Code <= 0)' +
-    ' And (Upper(C_Name) Like Upper(''%Ejm%'')) Or (Upper(C_Name) Like Upper(''%Ejm'')) Or (Upper(C_Name) Like Upper(''Ejm%''))' +
-    ' Or (Upper(C_Name) Not Like Upper(''%Ejm%'')) Or (Upper(C_Name) Not Like Upper(''%Ejm'')) Or (Upper(C_Name) Not Like Upper(''Ejm%''))' +
+    ' And (Lower(C_Name) Like Lower(''%Ejm%'')) Or (Lower(C_Name) Like Lower(''%Ejm'')) Or (Lower(C_Name) Like Lower(''Ejm%''))' +
+    ' Or (Lower(C_Name) Not Like Lower(''%Ejm%'')) Or (Lower(C_Name) Not Like Lower(''%Ejm'')) Or (Lower(C_Name) Not Like Lower(''Ejm%''))' +
     ' And (C_Doc Is Null) Or (C_Name Is Not Null)' +
     ' Or (C_Code In (1, 2, 3)) And (C_Date Between ''01.01.2013'' And ''01.01.2013'')';
 
   cExpected_5 =
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
-    ' Where (C_Code = 1) Or ((C_Code = 2) And (Upper(C_Name) <> Upper(''Juliano'')))'
-    + sLineBreak +
-    ' Group By C_Code, C_Name'
-    + sLineBreak +
-    ' Having ((C_Code > 0))'
-    + sLineBreak +
+    'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
+    ' Where (C_Code = 1) Or ((C_Code = 2) And (Lower(C_Name) <> Lower(''Juliano'')))' + sLineBreak +
+    ' Group By C_Code, C_Name' + sLineBreak +
+    ' Having ((C_Code > 0))' + sLineBreak +
     ' Order By C_Code, C_Doc';
 
   cExpected_6 =
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak +
+    'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
     ' Where (C_Code = 1)' +
-    ' And ((Upper(C_Name) Like Upper(''Ejm'')) Or (Upper(C_Name) Like Upper(''Mje'')) Or (Upper(C_Name) Like Upper(''Jme'')))' +
-    ' And ((Upper(C_Name) Like Upper(''Ejm%'')) Or (Upper(C_Name) Like Upper(''Mje%'')) Or (Upper(C_Name) Like Upper(''Jme%'')))' +
-    ' And ((Upper(C_Name) Like Upper(''%Ejm'')) Or (Upper(C_Name) Like Upper(''%Mje'')) Or (Upper(C_Name) Like Upper(''%Jme'')))' +
-    ' And ((Upper(C_Name) Like Upper(''%Ejm%'')) Or (Upper(C_Name) Like Upper(''%Mje%'')) Or (Upper(C_Name) Like Upper(''%Jme%'')))';
+    ' And ((Lower(C_Name) Like Lower(''Ejm'')) Or (Lower(C_Name) Like Lower(''Mje'')) Or (Lower(C_Name) Like Lower(''Jme'')))' +
+    ' And ((Lower(C_Name) Like Lower(''Ejm%'')) Or (Lower(C_Name) Like Lower(''Mje%'')) Or (Lower(C_Name) Like Lower(''Jme%'')))' +
+    ' And ((Lower(C_Name) Like Lower(''%Ejm'')) Or (Lower(C_Name) Like Lower(''%Mje'')) Or (Lower(C_Name) Like Lower(''%Jme'')))' +
+    ' And ((Lower(C_Name) Like Lower(''%Ejm%'')) Or (Lower(C_Name) Like Lower(''%Mje%'')) Or (Lower(C_Name) Like Lower(''%Jme%'')))';
 var
   vOut: string;
 begin
-  vOut :=
-    TSQLBuilder.Select
+  vOut := SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Where('C_Code').Equal(1)
-    ._And('C_Name').Different('Ezequiel', False)
+    .&And('C_Name').Different(SQL.Value('Ezequiel').Insensetive)
     .ToString;
   CheckEqualsString(cExpected_1, vOut);
 
-  vOut :=
-    TSQLBuilder.Select
+  vOut := SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Where('C_Code').Equal(1)
-    ._And(
-    TSQLBuilder.Where.Column('C_Code').Equal(2)._And('C_Name').Different('Juliano', False)
-    )
+    .&And(SQL.Where('C_Code').Equal(2).&And('C_Name').Different(SQL.Value('Juliano').Insensetive))
     .ToString;
   CheckEqualsString(cExpected_2, vOut);
 
-  vOut :=
-    TSQLBuilder.Select
+  vOut := SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Where('C_Code').Equal(1)
-    ._Or(
-    TSQLBuilder.Where.Column('C_Code').Equal(2)._And('C_Name').Different('Juliano', False)
-    )
+    .&Or(SQL.Where('C_Code').Equal(2).&And('C_Name').Different(SQL.Value('Juliano').Insensetive))
     .ToString;
   CheckEqualsString(cExpected_3, vOut);
 
-  vOut :=
-    TSQLBuilder.Select
+  vOut := SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Where('C_Code').Equal(1)
-    ._Or(
-    TSQLBuilder.Where.Column('C_Code').Equal(2)
-    ._And('C_Name').Different('Juliano', False)
-    ._Or('C_Code').Less(5)
+    .&Or(
+    SQL.Where('C_Code').Equal(2)
+    .&And('C_Name').Different(SQL.Value('Juliano').Insensetive)
+    .&Or('C_Code').Less(5)
     )
-    ._And('C_Code').Greater(0)
-    ._And('C_Code').Less(0)
-    ._And('C_Code').GreaterOrEqual(0)
-    ._Or('C_Code').LessOrEqual(0)
-    ._And('C_Name').Like('Ejm', False, loContaining)
-    ._Or('C_Name').Like('Ejm', False, loEnding)
-    ._Or('C_Name').Like('Ejm', False, loStarting)
-    ._Or('C_Name').NotLike('Ejm', False, loContaining)
-    ._Or('C_Name').NotLike('Ejm', False, loEnding)
-    ._Or('C_Name').NotLike('Ejm', False, loStarting)
-    ._And('C_Doc').IsNull
-    ._Or('C_Name').IsNotNull
-    ._Or('C_Code').InList([1, 2, 3])
-    ._And('C_Date').Between('01.01.2013', '01.01.2013')
+    .&And('C_Code').Greater(0)
+    .&And('C_Code').Less(0)
+    .&And('C_Code').GreaterOrEqual(0)
+    .&Or('C_Code').LessOrEqual(0)
+    .&And('C_Name').Like(SQL.Value('Ejm').Like(loContaining).Insensetive)
+    .&Or('C_Name').Like(SQL.Value('Ejm').Like(loEnding).Insensetive)
+    .&Or('C_Name').Like(SQL.Value('Ejm').Like(loStarting).Insensetive)
+    .&Or('C_Name').NotLike(SQL.Value('Ejm').Like(loContaining).Insensetive)
+    .&Or('C_Name').NotLike(SQL.Value('Ejm').Like(loEnding).Insensetive)
+    .&Or('C_Name').NotLike(SQL.Value('Ejm').Like(loStarting).Insensetive)
+    .&And('C_Doc').IsNull
+    .&Or('C_Name').IsNotNull
+    .&Or('C_Code').InList([1, 2, 3])
+    .&And('C_Date').Between(SQL.Value(StrToDate('01/01/2013')).Date, SQL.Value(StrToDate('01/01/2013')).Date)
     .ToString;
   CheckEqualsString(cExpected_4, vOut);
 
   vOut :=
-    TSQLBuilder.Select
+    SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Where('C_Code').Equal(1)
-    ._Or(
-    TSQLBuilder.Where.Column('C_Code').Equal(2)._And('C_Name').Different('Juliano', False)
-    )
-    .GroupBy(['C_Code', 'C_Name'])
-    .Having(['(C_Code > 0)'])
-    .OrderBy(['C_Code', 'C_Doc'])
+    .&Or(SQL.Where('C_Code').Equal(2).&And('C_Name').Different(SQL.Value('Juliano').Insensetive))
+    .GroupBy(SQL.GroupBy(['C_Code', 'C_Name']))
+    .Having(SQL.Having(['(C_Code > 0)']))
+    .OrderBy(SQL.OrderBy(['C_Code', 'C_Doc']))
     .ToString;
   CheckEqualsString(cExpected_5, vOut);
 
-  vOut :=
-    TSQLBuilder.Select
+  vOut := SQL.Select
     .Column('C_Code')
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
     .Where('C_Code').Equal(1)
-    ._And('C_Name').Like(['Ejm', 'Mje', 'Jme'], False, loEqual)
-    ._And('C_Name').Like(['Ejm', 'Mje', 'Jme'], False, loStarting)
-    ._And('C_Name').Like(['Ejm', 'Mje', 'Jme'], False, loEnding)
-    ._And('C_Name').Like(['Ejm', 'Mje', 'Jme'], False, loContaining)
+    .&And('C_Name').Like(
+    [SQL.Value('Ejm').Like(loEqual).Insensetive, SQL.Value('Mje').Like(loEqual).Insensetive, SQL.Value('Jme').Like(loEqual).Insensetive]
+    )
+    .&And('C_Name').Like(
+    [SQL.Value('Ejm').Like(loStarting).Insensetive, SQL.Value('Mje').Like(loStarting).Insensetive, SQL.Value('Jme').Like(loStarting).Insensetive]
+    )
+    .&And('C_Name').Like(
+    [SQL.Value('Ejm').Like(loEnding).Insensetive, SQL.Value('Mje').Like(loEnding).Insensetive, SQL.Value('Jme').Like(loEnding).Insensetive]
+    )
+    .&And('C_Name').Like(
+    [SQL.Value('Ejm').Like(loContaining).Insensetive, SQL.Value('Mje').Like(loContaining).Insensetive, SQL.Value('Jme').Like(loContaining).Insensetive]
+    )
     .ToString;
   CheckEqualsString(cExpected_6, vOut);
 end;
 
-procedure TTestSQLBuilder4D.TestSQLStatementSaveToFile;
+procedure TTestSQLBuilder4D.TestSQLToFile;
 const
   cSQLFile = 'SQLFile.SQL';
 
-  cSelect =
-    'Select '
-    + sLineBreak +
-    ' C_Code, C_Name, C_Doc'
-    + sLineBreak +
-    ' From Customers'
-    + sLineBreak;
+  cSelect = 'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak;
 
-  cUpdate =
-    'Update Customers Set'
-    + sLineBreak +
-    ' C_Code = 1,'
-    + sLineBreak +
-    ' C_Name = ''Ejm''' +
-    sLineBreak;
+  cUpdate = 'Update Customers Set' + sLineBreak +
+    ' C_Code = 1,' + sLineBreak +
+    ' C_Name = ''Ejm''' + sLineBreak;
 
   cDelete =
-    'Delete From Customers' +
-    sLineBreak;
+    'Delete From Customers' + sLineBreak;
 
   cInsert =
-    'Insert Into Customers'
-    + sLineBreak +
-    ' (C_Code,'
-    + sLineBreak +
-    '  C_Name,'
-    + sLineBreak +
-    '  C_Doc)'
-    + sLineBreak +
-    ' Values'
-    + sLineBreak +
-    ' (1,'
-    + sLineBreak +
-    '  ''Ejm'','
-    + sLineBreak +
-    '  58)' +
-    sLineBreak;
+    'Insert Into Customers' + sLineBreak +
+    ' (C_Code,' + sLineBreak +
+    '  C_Name,' + sLineBreak +
+    '  C_Doc)' + sLineBreak +
+    ' Values' + sLineBreak +
+    ' (1,' + sLineBreak +
+    '  ''Ejm'',' + sLineBreak +
+    '  58)' + sLineBreak;
 var
-  vStringList: TStringList;
+  vSl: TStringList;
 begin
-  vStringList := TStringList.Create;
+  vSl := TStringList.Create;
   try
-    TSQLBuilder.Select
+    SQL.Select
       .Column('C_Code')
       .Column('C_Name')
       .Column('C_Doc')
       .From('Customers')
-      .SaveToFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
-    vStringList.LoadFromFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
-    CheckEqualsString(cSelect, vStringList.Text);
+      .ToFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
+    vSl.LoadFromFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
+    CheckEqualsString(cSelect, vSl.Text);
 
-    TSQLBuilder.Update
+    SQL.Update
       .Table('Customers')
       .ColumnSetValue('C_Code', 1)
       .ColumnSetValue('C_Name', 'Ejm')
-      .SaveToFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
-    vStringList.LoadFromFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
-    CheckEqualsString(cUpdate, vStringList.Text);
+      .ToFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
+    vSl.LoadFromFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
+    CheckEqualsString(cUpdate, vSl.Text);
 
-    TSQLBuilder.Delete
+    SQL.Delete
       .From('Customers')
-      .SaveToFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
-    vStringList.LoadFromFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
-    CheckEqualsString(cDelete, vStringList.Text);
+      .ToFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
+    vSl.LoadFromFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
+    CheckEqualsString(cDelete, vSl.Text);
 
-    TSQLBuilder.Insert
+    SQL.Insert
       .Into('Customers')
       .ColumnValue('C_Code', 1)
       .ColumnValue('C_Name', 'Ejm')
       .ColumnValue('C_Doc', 58)
-      .SaveToFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
-    vStringList.LoadFromFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
-    CheckEqualsString(cInsert, vStringList.Text);
+      .ToFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
+    vSl.LoadFromFile(ExtractFilePath(ParamStr(0)) + cSQLFile);
+    CheckEqualsString(cInsert, vSl.Text);
   finally
-    FreeAndNil(vStringList);
+    FreeAndNil(vSl);
   end;
-end;
-
-procedure TTestSQLBuilder4D.TestSQLTableAlias;
-const
-  cExpected =
-    'Select '
-    + sLineBreak +
-    ' C_Code As Code, C_Name As Name, C_Doc As Doc'
-    + sLineBreak +
-    ' From Customers C';
-var
-  vOut: string;
-begin
-  vOut := TSQLBuilder.Select
-    .Column('C_Code', 'Code')
-    .Column('C_Name', 'Name')
-    .Column('C_Doc', 'Doc')
-    .From('Customers', 'C').ToString;
-
-  CheckEqualsString(cExpected, vOut);
-
-  vOut := TSQLBuilder.Select
-    .Column('C_Code', 'Code')
-    .Column('C_Name', 'Name')
-    .Column('C_Doc', 'Doc')
-    .From('Customers').TableAlias('C').ToString;
-
-  CheckEqualsString(cExpected, vOut);
 end;
 
 procedure TTestSQLBuilder4D.TestSQLUpdate;
 const
-  cUpdateNormal =
-    'Update Customers Set'
-    + sLineBreak +
-    ' C_Code = 1,'
-    + sLineBreak +
+  cUpdate = 'Update Customers Set' + sLineBreak +
+    ' C_Code = 1,' + sLineBreak +
     ' C_Name = ''Ejm''';
-
-  cUpdateWithWhere =
-    'Update Customers Set'
-    + sLineBreak +
-    ' C_Code = 1,'
-    + sLineBreak +
-    ' C_Name = ''Ejm'''
-    + sLineBreak +
+  cUpdateWithWhere = 'Update Customers Set' + sLineBreak +
+    ' C_Code = 1,' + sLineBreak +
+    ' C_Name = ''Ejm''' + sLineBreak +
     ' Where (C_Code = 1) And ((C_Name = ''Ejm'') Or (C_Name <> ''Ejm''))';
 var
   vOut: string;
 begin
-  vOut :=
-    TSQLBuilder.Update
-    .Table('Customers')
+  vOut := SQL.Update.Table('Customers')
     .ColumnSetValue('C_Code', 1)
     .ColumnSetValue('C_Name', 'Ejm')
     .ToString;
-  CheckEqualsString(cUpdateNormal, vOut);
+  CheckEqualsString(cUpdate, vOut);
 
-  vOut :=
-    TSQLBuilder.Update
-    .Table('Customers')
+  vOut := SQL.Update.Table(SQL.Table('Customers'))
+    .ColumnSetValue('C_Code', SQL.Value(1))
+    .ColumnSetValue('C_Name', SQL.Value('Ejm'))
+    .ToString;
+  CheckEqualsString(cUpdate, vOut);
+
+  vOut := SQL.Update.Table('Customers')
     .ColumnSetValue('C_Code', 1)
     .ColumnSetValue('C_Name', 'Ejm')
     .Where('C_Code').Equal(1)
-    ._And(
-    TSQLBuilder.Where.Column('C_Name').Equal('Ejm')
-    ._Or('C_Name').Different('Ejm')
-    )
-    .ToString;
+    .&And(SQL.Where.Column('C_Name').Equal('Ejm')
+    .&Or('C_Name').Different('Ejm')
+    ).ToString;
   CheckEqualsString(cUpdateWithWhere, vOut);
 
-  vOut :=
-    TSQLBuilder.Update
-    .Table('Customers')
+  vOut := SQL.Update.Table('Customers')
     .Columns(['C_Code', 'C_Name'])
     .SetValues([1, 'Ejm'])
     .ToString;
-  CheckEqualsString(cUpdateNormal, vOut);
+  CheckEqualsString(cUpdate, vOut);
 
-  vOut :=
-    TSQLBuilder.Update
-    .Table('Customers')
+  vOut := SQL.Update.Table('Customers')
+    .Columns(['C_Code', 'C_Name'])
+    .SetValues([SQL.Value(1), SQL.Value('Ejm')])
+    .ToString;
+  CheckEqualsString(cUpdate, vOut);
+
+  vOut := SQL.Update.Table('Customers')
     .Columns(['C_Code', 'C_Name'])
     .SetValues([1, 'Ejm'])
     .Where('C_Code').Equal(1)
-    ._And(
-    TSQLBuilder.Where.Column('C_Name').Equal('Ejm')
-    ._Or('C_Name').Different('Ejm')
-    )
-    .ToString;
+    .&And(SQL.Where('C_Name').Equal('Ejm')
+    .&Or('C_Name').Different('Ejm')
+    ).ToString;
   CheckEqualsString(cUpdateWithWhere, vOut);
-end;
-
-procedure TTestSQLBuilder4D.ValidateSQLInject;
-begin
-  TSQLBuilder.Select
-    .Column('C_Code')
-    .Column('C_Name')
-    .Column('C_Doc')
-    .From('Customers')
-    .Where('C_Code').Equal('Or')
 end;
 
 initialization
