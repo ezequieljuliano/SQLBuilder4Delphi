@@ -27,13 +27,6 @@ Limitations
 
 - Values ​​of type TDateTime, TDate, TTime should be used as string, for through TValue can not differentiate these types of a Float. (Example: Where('FieldDateTime').Equal('01.01.2015 01:05:22')). Or you can use the SQL.Value(). With this feature you can do something like: SQL.Value(Date).Date, SQL.Value(Now).Datetime and SQL.Value(Now).Time.
 
-External Dependencies
-=====================
-
-To perform the SQLParser SQLBuilder4D uses gaSQLParser. Therefore this dependence is included in the project within the "dependencies" folder. If you use the library parser you should add to the Path gaSQLParser.
-
-- gaSQLParser (http://sourceforge.net/projects/gasqlparser/);
-
 Examples
 =========
 
