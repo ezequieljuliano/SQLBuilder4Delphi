@@ -490,6 +490,14 @@ begin
   CheckEqualsString(cSelect_1, vOut);
 
   vOut := SQL.Select
+    .Column(SQL.Aggregate.Sum('C_Code * 1'))
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cSelect_1, vOut);
+
+  vOut := SQL.Select
     .Column(SQL.Aggregate.Sum.Expression('C_Code * 1'))
     .Column('C_Name')
     .Column('C_Doc')
@@ -506,6 +514,14 @@ begin
   CheckEqualsString(cSelect_2, vOut);
 
   vOut := SQL.Select
+    .Column(SQL.Aggregate.Sum('C_Code * 1').Alias('CodeM'))
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cSelect_2, vOut);
+
+  vOut := SQL.Select
     .Column(SQL.Aggregate(aggSum, SQL.Coalesce('C_Code * 1', 0)).Alias('CodeM'))
     .Column('C_Name')
     .Column('C_Doc')
@@ -514,7 +530,23 @@ begin
   CheckEqualsString(cSelect_3, vOut);
 
   vOut := SQL.Select
+    .Column(SQL.Aggregate.Sum(SQL.Coalesce('C_Code * 1', 0)).Alias('CodeM'))
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cSelect_3, vOut);
+
+  vOut := SQL.Select
     .Column(SQL.Coalesce(SQL.Aggregate(aggSum, SQL.Coalesce('C_Code * 1', 0)), 0).Alias('CodeM'))
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cSelect_4, vOut);
+
+  vOut := SQL.Select
+    .Column(SQL.Coalesce(SQL.Aggregate.Sum(SQL.Coalesce('C_Code * 1', 0)), 0).Alias('CodeM'))
     .Column('C_Name')
     .Column('C_Doc')
     .From('Customers')
@@ -667,6 +699,18 @@ const
     ' Having (Sum(C_Code) > 0)' + sLineBreak +
     ' Order By C_Code, C_Doc';
 
+  cSelect_1_1 =
+    'Select ' + sLineBreak +
+    ' C_Code, C_Name, C_Doc' + sLineBreak +
+    ' From Customers' + sLineBreak +
+    ' Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Left Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Right Join Places On (Customers.P_Code = Places.P_Code)' + sLineBreak +
+    ' Group By C_Code, C_Name' + sLineBreak +
+    ' Having (Sum(Coalesce(C_Code,0)) > 0)' + sLineBreak +
+    ' Order By C_Code, C_Doc';
+
   cSelect_2 =
     'Select ' + sLineBreak +
     ' C_Code, C_Name, C_Doc' + sLineBreak +
@@ -703,7 +747,7 @@ begin
     .LeftJoin('Places', '(Customers.P_Code = Places.P_Code)')
     .RightJoin('Places', '(Customers.P_Code = Places.P_Code)')
     .GroupBy.Column('C_Code').Column('C_Name')
-    .Having.Expression(SQL.AggCondition(SQL.Aggregate.Sum.Expression('C_Code'), opGreater, 0))
+    .Having.Expression(SQL.Aggregate.Sum('C_Code').Condition(opGreater, 0))
     .OrderBy.Column('C_Code').Column('C_Doc')
     .ToString;
   CheckEqualsString(cSelect_1, vOut);
@@ -718,7 +762,22 @@ begin
     .LeftJoin('Places', '(Customers.P_Code = Places.P_Code)')
     .RightJoin('Places', '(Customers.P_Code = Places.P_Code)')
     .GroupBy.Column('C_Code').Column('C_Name')
-    .Having(SQL.Having(SQL.AggCondition(SQL.Aggregate.Count.Expression('C_Code'), opDifferent, SQL.Value(0))))
+    .Having.Expression(SQL.Aggregate(aggSum, SQL.Coalesce('C_Code', 0)).Condition(opGreater, 0))
+    .OrderBy.Column('C_Code').Column('C_Doc')
+    .ToString;
+  CheckEqualsString(cSelect_1_1, vOut);
+
+  vOut := SQL.Select
+    .Column('C_Code')
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .Join('Places', '(Customers.P_Code = Places.P_Code)')
+    .Join('Places', '(Customers.P_Code = Places.P_Code)')
+    .LeftJoin('Places', '(Customers.P_Code = Places.P_Code)')
+    .RightJoin('Places', '(Customers.P_Code = Places.P_Code)')
+    .GroupBy.Column('C_Code').Column('C_Name')
+    .Having(SQL.Having(SQL.Aggregate.Count('C_Code').Condition(opDifferent, SQL.Value(0))))
     .OrderBy.Column('C_Code').Column('C_Doc')
     .ToString;
   CheckEqualsString(cSelect_2, vOut);
@@ -734,8 +793,8 @@ begin
     .RightJoin('Places', '(Customers.P_Code = Places.P_Code)')
     .GroupBy.Column('C_Code').Column('C_Name')
     .Having
-    .Expression(SQL.AggCondition(SQL.Aggregate.Count.Expression('C_Code'), opGreater, 0))
-    .Expression(SQL.AggCondition(SQL.Aggregate.Count.Expression('C_Code'), opLess, 0))
+    .Expression(SQL.Aggregate.Count('C_Code').Condition(opGreater, 0))
+    .Expression(SQL.Aggregate.Count('C_Code').Condition(opLess, 0))
     .OrderBy.Column('C_Code').Column('C_Doc')
     .ToString;
   CheckEqualsString(cSelect_3, vOut);
@@ -751,8 +810,8 @@ begin
     .RightJoin('Places', '(Customers.P_Code = Places.P_Code)')
     .GroupBy.Column('C_Code').Column('C_Name')
     .Having(SQL.Having([
-    SQL.AggCondition(SQL.Aggregate.Count.Expression('C_Code'), opGreater, 0),
-    SQL.AggCondition(SQL.Aggregate.Count.Expression('C_Code'), opLess, 0)
+    SQL.Aggregate.Count('C_Code').Condition(opGreater, 0),
+    SQL.Aggregate.Count('C_Code').Condition(opLess, 0)
     ]))
     .OrderBy.Column('C_Code').Column('C_Doc')
     .ToString;

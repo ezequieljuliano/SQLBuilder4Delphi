@@ -133,7 +133,6 @@ type
   ISQLHaving = interface;
   ISQLCoalesce = interface;
   ISQLAggregate = interface;
-  ISQLAggCondition = interface;
 
   ISQLCase = interface(ISQL)
     ['{49A86CB5-CCDF-4CA6-8FF4-DEF93232F6EB}']
@@ -173,10 +172,10 @@ type
     ['{DB27217D-6AE6-4356-9435-203D514D1503}']
     procedure CopyOf(pSource: ISQLHaving);
 
-    function Expression(pAggConditionTerm: ISQLAggCondition): ISQLHaving; overload;
+    function Expression(pAggregateTerm: ISQLAggregate): ISQLHaving; overload;
     function Expression(const pTerm: string): ISQLHaving; overload;
 
-    function Expressions(pTerms: array of ISQLAggCondition): ISQLHaving; overload;
+    function Expressions(pAggregateTerms: array of ISQLAggregate): ISQLHaving; overload;
     function Expressions(const pTerms: array of string): ISQLHaving; overload;
 
     function OrderBy(): ISQLOrderBy; overload;
@@ -283,27 +282,34 @@ type
 
   TSQLAggFunction = (aggAvg, aggCount, aggMax, aggMin, aggSum);
 
-  ISQLAggCondition = interface(ISQL)
-    ['{52633483-DE44-464B-8F3F-0182A8D3B8E4}']
-    function GetTerm(): ISQLAggregate;
-    function GetOp(): TSQLOperator;
-    function GetValue(): ISQLValue;
-
-    property Term: ISQLAggregate read GetTerm;
-    property Op: TSQLOperator read GetOp;
-    property Value: ISQLValue read GetValue;
-  end;
-
   ISQLAggregate = interface(ISQL)
     ['{3B040F41-A4EA-4034-A7D9-15F5B594CD46}']
-    function Avg(): ISQLAggregate;
-    function Count(): ISQLAggregate;
-    function Max(): ISQLAggregate;
-    function Min(): ISQLAggregate;
-    function Sum(): ISQLAggregate;
+    function Avg(): ISQLAggregate; overload;
+    function Avg(const pExpression: string): ISQLAggregate; overload;
+    function Avg(pCoalesceExpression: ISQLCoalesce): ISQLAggregate; overload;
+
+    function Count(): ISQLAggregate; overload;
+    function Count(const pExpression: string): ISQLAggregate; overload;
+    function Count(pCoalesceExpression: ISQLCoalesce): ISQLAggregate; overload;
+
+    function Max(): ISQLAggregate; overload;
+    function Max(const pExpression: string): ISQLAggregate; overload;
+    function Max(pCoalesceExpression: ISQLCoalesce): ISQLAggregate; overload;
+
+    function Min(): ISQLAggregate; overload;
+    function Min(const pExpression: string): ISQLAggregate; overload;
+    function Min(pCoalesceExpression: ISQLCoalesce): ISQLAggregate; overload;
+
+    function Sum(): ISQLAggregate; overload;
+    function Sum(const pExpression: string): ISQLAggregate; overload;
+    function Sum(pCoalesceExpression: ISQLCoalesce): ISQLAggregate; overload;
 
     function Expression(const pTerm: string): ISQLAggregate; overload;
     function Expression(pCoalesceTerm: ISQLCoalesce): ISQLAggregate; overload;
+
+    function Condition(const pOp: TSQLOperator; const pValue: TValue): ISQLAggregate; overload;
+    function Condition(const pOp: TSQLOperator; pValue: ISQLValue): ISQLAggregate; overload;
+    function Condition(const pOp: TSQLOperator): ISQLAggregate; overload;
 
     function Alias(const pAlias: string): ISQLAggregate;
   end;
@@ -429,8 +435,8 @@ type
     class function Having(): ISQLHaving; overload; static;
     class function Having(const pExpression: string): ISQLHaving; overload; static;
     class function Having(const pExpressions: array of string): ISQLHaving; overload; static;
-    class function Having(pExpression: ISQLAggCondition): ISQLHaving; overload; static;
-    class function Having(pExpressions: array of ISQLAggCondition): ISQLHaving; overload; static;
+    class function Having(pExpression: ISQLAggregate): ISQLHaving; overload; static;
+    class function Having(pExpressions: array of ISQLAggregate): ISQLHaving; overload; static;
 
     class function OrderBy(): ISQLOrderBy; overload; static;
     class function OrderBy(const pColumn: string; const pSortType: TSQLSort = srNone): ISQLOrderBy; overload; static;
@@ -445,10 +451,6 @@ type
     class function Aggregate(): ISQLAggregate; overload;
     class function Aggregate(const pFunction: TSQLAggFunction; const pExpression: string): ISQLAggregate; overload; static;
     class function Aggregate(const pFunction: TSQLAggFunction; pExpression: ISQLCoalesce): ISQLAggregate; overload; static;
-
-    class function AggCondition(pTerm: ISQLAggregate; const pOp: TSQLOperator; pValue: TValue): ISQLAggCondition; overload;
-    class function AggCondition(pTerm: ISQLAggregate; const pOp: TSQLOperator; pValue: ISQLValue): ISQLAggCondition; overload;
-    class function AggCondition(pTerm: ISQLAggregate; const pOp: TSQLOperator): ISQLAggCondition; overload;
 
     class function &Case(): ISQLCase; overload; static;
     class function &Case(const pExpression: string): ISQLCase; overload; static;
@@ -700,10 +702,10 @@ type
 
     procedure CopyOf(pSource: ISQLHaving);
 
-    function Expression(pAggConditionTerm: ISQLAggCondition): ISQLHaving; overload;
+    function Expression(pAggregateTerm: ISQLAggregate): ISQLHaving; overload;
     function Expression(const pTerm: string): ISQLHaving; overload;
 
-    function Expressions(pTerms: array of ISQLAggCondition): ISQLHaving; overload;
+    function Expressions(pAggregateTerms: array of ISQLAggregate): ISQLHaving; overload;
     function Expressions(const pTerms: array of string): ISQLHaving; overload;
 
     function OrderBy(): ISQLOrderBy; overload;
@@ -987,42 +989,45 @@ type
     function Alias(const pAlias: string): ISQLCoalesce;
   end;
 
-  TSQLAggCondition = class(TSQL, ISQLAggCondition)
-  strict private
-    FTerm: ISQLAggregate;
-    FOp: TSQLOperator;
-    FValue: ISQLValue;
-    function GetTerm(): ISQLAggregate;
-    function GetOp(): TSQLOperator;
-    function GetValue(): ISQLValue;
-  strict protected
-    function DoToString(): string; override;
-  public
-    constructor Create(pTerm: ISQLAggregate; const pOp: TSQLOperator; pValue: ISQLValue);
-
-    property Term: ISQLAggregate read GetTerm;
-    property Op: TSQLOperator read GetOp;
-    property Value: ISQLValue read GetValue;
-  end;
-
   TSQLAggregate = class(TSQL, ISQLAggregate)
   strict private
     FFunction: TSQLAggFunction;
     FTerm: string;
     FAlias: string;
+    FOp: TSQLOperator;
+    FValue: ISQLValue;
+    FIsCondition: Boolean;
   strict protected
     function DoToString(): string; override;
   public
     constructor Create();
 
-    function Avg(): ISQLAggregate;
-    function Count(): ISQLAggregate;
-    function Max(): ISQLAggregate;
-    function Min(): ISQLAggregate;
-    function Sum(): ISQLAggregate;
+    function Avg(): ISQLAggregate; overload;
+    function Avg(const pExpression: string): ISQLAggregate; overload;
+    function Avg(pCoalesceExpression: ISQLCoalesce): ISQLAggregate; overload;
+
+    function Count(): ISQLAggregate; overload;
+    function Count(const pExpression: string): ISQLAggregate; overload;
+    function Count(pCoalesceExpression: ISQLCoalesce): ISQLAggregate; overload;
+
+    function Max(): ISQLAggregate; overload;
+    function Max(const pExpression: string): ISQLAggregate; overload;
+    function Max(pCoalesceExpression: ISQLCoalesce): ISQLAggregate; overload;
+
+    function Min(): ISQLAggregate; overload;
+    function Min(const pExpression: string): ISQLAggregate; overload;
+    function Min(pCoalesceExpression: ISQLCoalesce): ISQLAggregate; overload;
+
+    function Sum(): ISQLAggregate; overload;
+    function Sum(const pExpression: string): ISQLAggregate; overload;
+    function Sum(pCoalesceExpression: ISQLCoalesce): ISQLAggregate; overload;
 
     function Expression(const pTerm: string): ISQLAggregate; overload;
     function Expression(pCoalesceTerm: ISQLCoalesce): ISQLAggregate; overload;
+
+    function Condition(const pOp: TSQLOperator; const pValue: TValue): ISQLAggregate; overload;
+    function Condition(const pOp: TSQLOperator; pValue: ISQLValue): ISQLAggregate; overload;
+    function Condition(const pOp: TSQLOperator): ISQLAggregate; overload;
 
     function Alias(const pAlias: string): ISQLAggregate;
   end;
@@ -1757,9 +1762,9 @@ begin
   FUnions := TList<ISQLUnion>.Create;
 end;
 
-function TSQLHaving.Expression(pAggConditionTerm: ISQLAggCondition): ISQLHaving;
+function TSQLHaving.Expression(pAggregateTerm: ISQLAggregate): ISQLHaving;
 begin
-  Result := Expression(pAggConditionTerm.ToString());
+  Result := Expression(pAggregateTerm.ToString());
 end;
 
 function TSQLHaving.Expression(const pTerm: string): ISQLHaving;
@@ -1768,13 +1773,13 @@ begin
   Result := Self;
 end;
 
-function TSQLHaving.Expressions(pTerms: array of ISQLAggCondition): ISQLHaving;
+function TSQLHaving.Expressions(pAggregateTerms: array of ISQLAggregate): ISQLHaving;
 var
   I: Integer;
 begin
   Criterias.Clear;
-  for I := Low(pTerms) to High(pTerms) do
-    Expression(pTerms[I]);
+  for I := Low(pAggregateTerms) to High(pAggregateTerms) do
+    Expression(pAggregateTerms[I]);
   Result := Self;
 end;
 
@@ -3146,14 +3151,47 @@ begin
   Result := Self;
 end;
 
+function TSQLAggregate.Count(const pExpression: string): ISQLAggregate;
+begin
+  Result := Self.Count().Expression(pExpression);
+end;
+
+function TSQLAggregate.Condition(const pOp: TSQLOperator; const pValue: TValue): ISQLAggregate;
+begin
+  Result := Condition(pOp, TSQLValue.Create(pValue));
+end;
+
+function TSQLAggregate.Condition(const pOp: TSQLOperator; pValue: ISQLValue): ISQLAggregate;
+begin
+  FOp := pOp;
+  FValue := pValue;
+  FIsCondition := True;
+  Result := Self;
+end;
+
+function TSQLAggregate.Condition(const pOp: TSQLOperator): ISQLAggregate;
+begin
+  Result := Condition(pOp, nil);
+end;
+
+function TSQLAggregate.Count(pCoalesceExpression: ISQLCoalesce): ISQLAggregate;
+begin
+  Result := Self.Count().Expression(pCoalesceExpression);
+end;
+
 constructor TSQLAggregate.Create;
 begin
   FFunction := aggAvg;
   FTerm := EmptyStr;
   FAlias := EmptyStr;
+  FIsCondition := False;
+  FOp := opEqual;
+  FValue := nil;
 end;
 
 function TSQLAggregate.DoToString: string;
+var
+  vValue: string;
 begin
   case FFunction of
     aggAvg:
@@ -3167,7 +3205,17 @@ begin
     aggSum:
       Result := 'Sum';
   end;
+
   Result := Result + '(' + FTerm + ')';
+
+  if FIsCondition then
+  begin
+    vValue := FValue.ToString();
+    if not vValue.IsEmpty then
+      vValue := ' ' + vValue;
+    Result := Result + ' ' + SQL_OPERATOR[FOp] + vValue;
+  end;
+
   if not FAlias.IsEmpty then
     Result := Result + ' As ' + FAlias;
 end;
@@ -3199,6 +3247,46 @@ function TSQLAggregate.Sum: ISQLAggregate;
 begin
   FFunction := aggSum;
   Result := Self;
+end;
+
+function TSQLAggregate.Avg(const pExpression: string): ISQLAggregate;
+begin
+  Result := Self.Avg().Expression(pExpression);
+end;
+
+function TSQLAggregate.Avg(pCoalesceExpression: ISQLCoalesce): ISQLAggregate;
+begin
+  Result := Self.Avg().Expression(pCoalesceExpression);
+end;
+
+function TSQLAggregate.Max(pCoalesceExpression: ISQLCoalesce): ISQLAggregate;
+begin
+  Result := Self.Max().Expression(pCoalesceExpression);
+end;
+
+function TSQLAggregate.Max(const pExpression: string): ISQLAggregate;
+begin
+  Result := Self.Max().Expression(pExpression);
+end;
+
+function TSQLAggregate.Min(pCoalesceExpression: ISQLCoalesce): ISQLAggregate;
+begin
+  Result := Self.Min().Expression(pCoalesceExpression);
+end;
+
+function TSQLAggregate.Min(const pExpression: string): ISQLAggregate;
+begin
+  Result := Self.Min().Expression(pExpression);
+end;
+
+function TSQLAggregate.Sum(const pExpression: string): ISQLAggregate;
+begin
+  Result := Self.Sum().Expression(pExpression);
+end;
+
+function TSQLAggregate.Sum(pCoalesceExpression: ISQLCoalesce): ISQLAggregate;
+begin
+  Result := Self.Sum().Expression(pCoalesceExpression);
 end;
 
 { TSQLCase }
@@ -3317,43 +3405,6 @@ begin
   FValue := pValue;
 end;
 
-{ TSQLAggCondition }
-
-constructor TSQLAggCondition.Create(pTerm: ISQLAggregate; const pOp: TSQLOperator;
-  pValue: ISQLValue);
-begin
-  FTerm := pTerm;
-  FOp := pOp;
-  FValue := pValue;
-  if (FValue = nil) then
-    FValue := TSQLValue.Create('').Expression;
-end;
-
-function TSQLAggCondition.DoToString: string;
-var
-  vValue: string;
-begin
-  vValue := FValue.ToString();
-  if not vValue.IsEmpty then
-    vValue := ' ' + vValue;
-  Result := FTerm.ToString() + ' ' + SQL_OPERATOR[FOp] + vValue;
-end;
-
-function TSQLAggCondition.GetOp: TSQLOperator;
-begin
-  Result := FOp;
-end;
-
-function TSQLAggCondition.GetTerm: ISQLAggregate;
-begin
-  Result := FTerm;
-end;
-
-function TSQLAggCondition.GetValue: ISQLValue;
-begin
-  Result := FValue;
-end;
-
 { SQL }
 
 class function SQL.Aggregate: ISQLAggregate;
@@ -3377,24 +3428,6 @@ begin
       Result.Sum;
   end;
   Result.Expression(pExpression);
-end;
-
-class function SQL.AggCondition(pTerm: ISQLAggregate; const pOp: TSQLOperator;
-  pValue: ISQLValue): ISQLAggCondition;
-begin
-  Result := TSQLAggCondition.Create(pTerm, pOp, pValue);
-end;
-
-class function SQL.AggCondition(pTerm: ISQLAggregate;
-  const pOp: TSQLOperator): ISQLAggCondition;
-begin
-  Result := SQL.AggCondition(pTerm, pOp, nil);
-end;
-
-class function SQL.AggCondition(pTerm: ISQLAggregate; const pOp: TSQLOperator;
-  pValue: TValue): ISQLAggCondition;
-begin
-  Result := SQL.AggCondition(pTerm, pOp, TSQLValue.Create(pValue));
 end;
 
 class function SQL.Aggregate(const pFunction: TSQLAggFunction; pExpression: ISQLCoalesce): ISQLAggregate;
@@ -3498,13 +3531,13 @@ begin
   Result.Columns(pColumns);
 end;
 
-class function SQL.Having(pExpression: ISQLAggCondition): ISQLHaving;
+class function SQL.Having(pExpression: ISQLAggregate): ISQLHaving;
 begin
   Result := SQL.Having();
   Result.Expression(pExpression);
 end;
 
-class function SQL.Having(pExpressions: array of ISQLAggCondition): ISQLHaving;
+class function SQL.Having(pExpressions: array of ISQLAggregate): ISQLHaving;
 begin
   Result := SQL.Having();
   Result.Expressions(pExpressions);
