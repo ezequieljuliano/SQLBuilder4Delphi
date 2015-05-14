@@ -144,9 +144,13 @@ type
 
     function &Then(const pValue: TValue): ISQLCase; overload;
     function &Then(pValue: ISQLValue): ISQLCase; overload;
+    function &Then(pValue: ISQLAggregate): ISQLCase; overload;
+    function &Then(pValue: ISQLCoalesce): ISQLCase; overload;
 
     function &Else(const pDefValue: TValue): ISQLCase; overload;
     function &Else(pDefValue: ISQLValue): ISQLCase; overload;
+    function &Else(pDefValue: ISQLAggregate): ISQLCase; overload;
+    function &Else(pDefValue: ISQLCoalesce): ISQLCase; overload;
 
     function &End(): ISQLCase;
 
@@ -287,25 +291,31 @@ type
     function Avg(): ISQLAggregate; overload;
     function Avg(const pExpression: string): ISQLAggregate; overload;
     function Avg(pCoalesceExpression: ISQLCoalesce): ISQLAggregate; overload;
+    function Avg(pCaseTerm: ISQLCase): ISQLAggregate; overload;
 
     function Count(): ISQLAggregate; overload;
     function Count(const pExpression: string): ISQLAggregate; overload;
     function Count(pCoalesceExpression: ISQLCoalesce): ISQLAggregate; overload;
+    function Count(pCaseTerm: ISQLCase): ISQLAggregate; overload;
 
     function Max(): ISQLAggregate; overload;
     function Max(const pExpression: string): ISQLAggregate; overload;
     function Max(pCoalesceExpression: ISQLCoalesce): ISQLAggregate; overload;
+    function Max(pCaseTerm: ISQLCase): ISQLAggregate; overload;
 
     function Min(): ISQLAggregate; overload;
     function Min(const pExpression: string): ISQLAggregate; overload;
     function Min(pCoalesceExpression: ISQLCoalesce): ISQLAggregate; overload;
+    function Min(pCaseTerm: ISQLCase): ISQLAggregate; overload;
 
     function Sum(): ISQLAggregate; overload;
     function Sum(const pExpression: string): ISQLAggregate; overload;
     function Sum(pCoalesceExpression: ISQLCoalesce): ISQLAggregate; overload;
+    function Sum(pCaseTerm: ISQLCase): ISQLAggregate; overload;
 
     function Expression(const pTerm: string): ISQLAggregate; overload;
     function Expression(pCoalesceTerm: ISQLCoalesce): ISQLAggregate; overload;
+    function Expression(pCaseTerm: ISQLCase): ISQLAggregate; overload;
 
     function Condition(const pOp: TSQLOperator; const pValue: TValue): ISQLAggregate; overload;
     function Condition(const pOp: TSQLOperator; pValue: ISQLValue): ISQLAggregate; overload;
@@ -318,6 +328,7 @@ type
     ['{48252AD8-E021-44D1-8C9F-DEBC18492735}']
     function Expression(const pTerm: string): ISQLCoalesce; overload;
     function Expression(const pAggregateTerm: ISQLAggregate): ISQLCoalesce; overload;
+    function Expression(const pCaseTerm: ISQLCase): ISQLCoalesce; overload;
 
     function Value(const pValue: TValue): ISQLCoalesce; overload;
     function Value(pValue: ISQLValue): ISQLCoalesce; overload;
@@ -447,6 +458,8 @@ type
     class function Coalesce(const pExpression: string; pValue: ISQLValue): ISQLCoalesce; overload; static;
     class function Coalesce(pExpression: ISQLAggregate; const pValue: TValue): ISQLCoalesce; overload; static;
     class function Coalesce(pExpression: ISQLAggregate; pValue: ISQLValue): ISQLCoalesce; overload; static;
+    class function Coalesce(pExpression: ISQLCase; const pValue: TValue): ISQLCoalesce; overload; static;
+    class function Coalesce(pExpression: ISQLCase; pValue: ISQLValue): ISQLCoalesce; overload; static;
 
     class function Aggregate(): ISQLAggregate; overload;
     class function Aggregate(const pFunction: TSQLAggFunction; const pExpression: string): ISQLAggregate; overload; static;
@@ -982,6 +995,7 @@ type
 
     function Expression(const pTerm: string): ISQLCoalesce; overload;
     function Expression(const pAggregateTerm: ISQLAggregate): ISQLCoalesce; overload;
+    function Expression(const pCaseTerm: ISQLCase): ISQLCoalesce; overload;
 
     function Value(const pValue: TValue): ISQLCoalesce; overload;
     function Value(pValue: ISQLValue): ISQLCoalesce; overload;
@@ -1005,25 +1019,31 @@ type
     function Avg(): ISQLAggregate; overload;
     function Avg(const pExpression: string): ISQLAggregate; overload;
     function Avg(pCoalesceExpression: ISQLCoalesce): ISQLAggregate; overload;
+    function Avg(pCaseTerm: ISQLCase): ISQLAggregate; overload;
 
     function Count(): ISQLAggregate; overload;
     function Count(const pExpression: string): ISQLAggregate; overload;
     function Count(pCoalesceExpression: ISQLCoalesce): ISQLAggregate; overload;
+    function Count(pCaseTerm: ISQLCase): ISQLAggregate; overload;
 
     function Max(): ISQLAggregate; overload;
     function Max(const pExpression: string): ISQLAggregate; overload;
     function Max(pCoalesceExpression: ISQLCoalesce): ISQLAggregate; overload;
+    function Max(pCaseTerm: ISQLCase): ISQLAggregate; overload;
 
     function Min(): ISQLAggregate; overload;
     function Min(const pExpression: string): ISQLAggregate; overload;
     function Min(pCoalesceExpression: ISQLCoalesce): ISQLAggregate; overload;
+    function Min(pCaseTerm: ISQLCase): ISQLAggregate; overload;
 
     function Sum(): ISQLAggregate; overload;
     function Sum(const pExpression: string): ISQLAggregate; overload;
     function Sum(pCoalesceExpression: ISQLCoalesce): ISQLAggregate; overload;
+    function Sum(pCaseTerm: ISQLCase): ISQLAggregate; overload;
 
     function Expression(const pTerm: string): ISQLAggregate; overload;
     function Expression(pCoalesceTerm: ISQLCoalesce): ISQLAggregate; overload;
+    function Expression(pCaseTerm: ISQLCase): ISQLAggregate; overload;
 
     function Condition(const pOp: TSQLOperator; const pValue: TValue): ISQLAggregate; overload;
     function Condition(const pOp: TSQLOperator; pValue: ISQLValue): ISQLAggregate; overload;
@@ -1067,9 +1087,13 @@ type
 
     function &Then(const pValue: TValue): ISQLCase; overload;
     function &Then(pValue: ISQLValue): ISQLCase; overload;
+    function &Then(pValue: ISQLAggregate): ISQLCase; overload;
+    function &Then(pValue: ISQLCoalesce): ISQLCase; overload;
 
     function &Else(const pDefValue: TValue): ISQLCase; overload;
     function &Else(pDefValue: ISQLValue): ISQLCase; overload;
+    function &Else(pDefValue: ISQLAggregate): ISQLCase; overload;
+    function &Else(pDefValue: ISQLCoalesce): ISQLCase; overload;
 
     function &End(): ISQLCase;
 
@@ -3109,6 +3133,11 @@ begin
     Result := Result + ' As ' + FAlias;
 end;
 
+function TSQLCoalesce.Expression(const pCaseTerm: ISQLCase): ISQLCoalesce;
+begin
+  Result := Expression(pCaseTerm.ToString());
+end;
+
 function TSQLCoalesce.Expression(const pAggregateTerm: ISQLAggregate): ISQLCoalesce;
 begin
   Result := Expression(pAggregateTerm.ToString());
@@ -3145,17 +3174,6 @@ begin
   Result := Self;
 end;
 
-function TSQLAggregate.Count: ISQLAggregate;
-begin
-  FFunction := aggCount;
-  Result := Self;
-end;
-
-function TSQLAggregate.Count(const pExpression: string): ISQLAggregate;
-begin
-  Result := Self.Count().Expression(pExpression);
-end;
-
 function TSQLAggregate.Condition(const pOp: TSQLOperator; const pValue: TValue): ISQLAggregate;
 begin
   Result := Condition(pOp, TSQLValue.Create(pValue));
@@ -3174,9 +3192,25 @@ begin
   Result := Condition(pOp, nil);
 end;
 
+function TSQLAggregate.Count: ISQLAggregate;
+begin
+  FFunction := aggCount;
+  Result := Self;
+end;
+
+function TSQLAggregate.Count(const pExpression: string): ISQLAggregate;
+begin
+  Result := Self.Count().Expression(pExpression);
+end;
+
 function TSQLAggregate.Count(pCoalesceExpression: ISQLCoalesce): ISQLAggregate;
 begin
   Result := Self.Count().Expression(pCoalesceExpression);
+end;
+
+function TSQLAggregate.Count(pCaseTerm: ISQLCase): ISQLAggregate;
+begin
+  Result := Self.Count().Expression(pCaseTerm);
 end;
 
 constructor TSQLAggregate.Create;
@@ -3220,6 +3254,11 @@ begin
     Result := Result + ' As ' + FAlias;
 end;
 
+function TSQLAggregate.Expression(pCaseTerm: ISQLCase): ISQLAggregate;
+begin
+  Result := Expression(pCaseTerm.ToString());
+end;
+
 function TSQLAggregate.Expression(pCoalesceTerm: ISQLCoalesce): ISQLAggregate;
 begin
   Result := Expression(pCoalesceTerm.ToString());
@@ -3228,24 +3267,6 @@ end;
 function TSQLAggregate.Expression(const pTerm: string): ISQLAggregate;
 begin
   FTerm := pTerm;
-  Result := Self;
-end;
-
-function TSQLAggregate.Max: ISQLAggregate;
-begin
-  FFunction := aggMax;
-  Result := Self;
-end;
-
-function TSQLAggregate.Min: ISQLAggregate;
-begin
-  FFunction := aggMin;
-  Result := Self;
-end;
-
-function TSQLAggregate.Sum: ISQLAggregate;
-begin
-  FFunction := aggSum;
   Result := Self;
 end;
 
@@ -3259,6 +3280,17 @@ begin
   Result := Self.Avg().Expression(pCoalesceExpression);
 end;
 
+function TSQLAggregate.Avg(pCaseTerm: ISQLCase): ISQLAggregate;
+begin
+  Result := Self.Avg().Expression(pCaseTerm);
+end;
+
+function TSQLAggregate.Max: ISQLAggregate;
+begin
+  FFunction := aggMax;
+  Result := Self;
+end;
+
 function TSQLAggregate.Max(pCoalesceExpression: ISQLCoalesce): ISQLAggregate;
 begin
   Result := Self.Max().Expression(pCoalesceExpression);
@@ -3267,6 +3299,17 @@ end;
 function TSQLAggregate.Max(const pExpression: string): ISQLAggregate;
 begin
   Result := Self.Max().Expression(pExpression);
+end;
+
+function TSQLAggregate.Max(pCaseTerm: ISQLCase): ISQLAggregate;
+begin
+  Result := Self.Max().Expression(pCaseTerm);
+end;
+
+function TSQLAggregate.Min: ISQLAggregate;
+begin
+  FFunction := aggMin;
+  Result := Self;
 end;
 
 function TSQLAggregate.Min(pCoalesceExpression: ISQLCoalesce): ISQLAggregate;
@@ -3279,6 +3322,17 @@ begin
   Result := Self.Min().Expression(pExpression);
 end;
 
+function TSQLAggregate.Min(pCaseTerm: ISQLCase): ISQLAggregate;
+begin
+  Result := Self.Min().Expression(pCaseTerm);
+end;
+
+function TSQLAggregate.Sum: ISQLAggregate;
+begin
+  FFunction := aggSum;
+  Result := Self;
+end;
+
 function TSQLAggregate.Sum(const pExpression: string): ISQLAggregate;
 begin
   Result := Self.Sum().Expression(pExpression);
@@ -3287,6 +3341,11 @@ end;
 function TSQLAggregate.Sum(pCoalesceExpression: ISQLCoalesce): ISQLAggregate;
 begin
   Result := Self.Sum().Expression(pCoalesceExpression);
+end;
+
+function TSQLAggregate.Sum(pCaseTerm: ISQLCase): ISQLAggregate;
+begin
+  Result := Self.Sum().Expression(pCaseTerm);
 end;
 
 { TSQLCase }
@@ -3300,6 +3359,16 @@ end;
 function TSQLCase.&Else(const pDefValue: TValue): ISQLCase;
 begin
   Result := &Else(TSQLValue.Create(pDefValue));
+end;
+
+function TSQLCase.&Else(pDefValue: ISQLAggregate): ISQLCase;
+begin
+  Result := &Else(TSQLValue.Create(pDefValue.ToString()).Expression);
+end;
+
+function TSQLCase.&Else(pDefValue: ISQLCoalesce): ISQLCase;
+begin
+  Result := &Else(TSQLValue.Create(pDefValue.ToString()).Expression);
 end;
 
 function TSQLCase.&End: ISQLCase;
@@ -3319,6 +3388,16 @@ end;
 function TSQLCase.&Then(const pValue: TValue): ISQLCase;
 begin
   Result := &Then(TSQLValue.Create(pValue));
+end;
+
+function TSQLCase.&Then(pValue: ISQLAggregate): ISQLCase;
+begin
+  Result := &Then(TSQLValue.Create(pValue.ToString()).Expression);
+end;
+
+function TSQLCase.&Then(pValue: ISQLCoalesce): ISQLCase;
+begin
+  Result := &Then(TSQLValue.Create(pValue.ToString()).Expression);
 end;
 
 function TSQLCase.Alias(const pAlias: string): ISQLCase;
@@ -3455,6 +3534,18 @@ end;
 class function SQL.Coalesce(pExpression: ISQLAggregate; const pValue: TValue): ISQLCoalesce;
 begin
   Result := SQL.Coalesce(pExpression.ToString(), SQL.Value(pValue));
+end;
+
+class function SQL.Coalesce(pExpression: ISQLCase; const pValue: TValue): ISQLCoalesce;
+begin
+  Result := SQL.Coalesce(pExpression.ToString(), SQL.Value(pValue));
+end;
+
+class function SQL.Coalesce(pExpression: ISQLCase; pValue: ISQLValue): ISQLCoalesce;
+begin
+  Result := SQL.Coalesce();
+  Result.Expression(pExpression);
+  Result.Value(pValue);
 end;
 
 class function SQL.&Case: ISQLCase;

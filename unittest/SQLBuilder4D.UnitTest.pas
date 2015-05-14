@@ -564,6 +564,62 @@ const
     ' End, C_Name' + sLineBreak +
     ' From Customers';
 
+  cSelect_1_1 = 'Select ' + sLineBreak +
+    ' Sum(Case ' + sLineBreak +
+    '  When 1 Then 2' + sLineBreak +
+    '  When 2 Then 3' + sLineBreak +
+    '  Else 4' + sLineBreak +
+    ' End) As C_Sum, C_Name' + sLineBreak +
+    ' From Customers';
+
+  cSelect_1_2 = 'Select ' + sLineBreak +
+    ' Sum(Case ' + sLineBreak +
+    '  When 1 Then 2' + sLineBreak +
+    '  When 2 Then 3' + sLineBreak +
+    '  Else 4' + sLineBreak +
+    ' End), C_Name' + sLineBreak +
+    ' From Customers';
+
+  cSelect_1_3 = 'Select ' + sLineBreak +
+    ' Case ' + sLineBreak +
+    '  When 1 Then 2' + sLineBreak +
+    '  When 2 Then 3' + sLineBreak +
+    '  Else Sum(C_Value)' + sLineBreak +
+    ' End, C_Name' + sLineBreak +
+    ' From Customers';
+
+  cSelect_1_4 = 'Select ' + sLineBreak +
+    ' Case ' + sLineBreak +
+    '  When 1 Then 2' + sLineBreak +
+    '  When 2 Then 3' + sLineBreak +
+    '  Else Sum(Coalesce(C_Value,0))' + sLineBreak +
+    ' End, C_Name' + sLineBreak +
+    ' From Customers';
+
+  cSelect_1_5 = 'Select ' + sLineBreak +
+    ' Case ' + sLineBreak +
+    '  When 1 Then 2' + sLineBreak +
+    '  When 2 Then 3' + sLineBreak +
+    '  Else Coalesce(Sum(C_Value),0)' + sLineBreak +
+    ' End, C_Name' + sLineBreak +
+    ' From Customers';
+
+  cSelect_1_6 = 'Select ' + sLineBreak +
+    ' Coalesce(Sum(Case ' + sLineBreak +
+    '  When 1 Then 2' + sLineBreak +
+    '  When 2 Then 3' + sLineBreak +
+    '  Else 4' + sLineBreak +
+    ' End),0) As C_Sum, C_Name' + sLineBreak +
+    ' From Customers';
+
+  cSelect_1_7 = 'Select ' + sLineBreak +
+    ' Coalesce(Case ' + sLineBreak +
+    '  When 1 Then 2' + sLineBreak +
+    '  When 2 Then 3' + sLineBreak +
+    '  Else 4' + sLineBreak +
+    ' End,0) As C_Sum, C_Name' + sLineBreak +
+    ' From Customers';
+
   cSelect_2 = 'Select ' + sLineBreak +
     ' Case C_Code' + sLineBreak +
     '  When 1 Then 2' + sLineBreak +
@@ -604,6 +660,55 @@ begin
     .From('Customers')
     .ToString;
   CheckEqualsString(cSelect_1, vOut);
+
+  vOut := SQL.Select
+    .Column(SQL.Aggregate.Sum(SQL.&Case.&When(1).&Then(2).&When(2).&Then(3).&Else(4).&End).Alias('C_Sum'))
+    .Column('C_Name')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cSelect_1_1, vOut);
+
+  vOut := SQL.Select
+    .Column(SQL.Aggregate.Sum(SQL.&Case.&When(1).&Then(2).&When(2).&Then(3).&Else(4).&End))
+    .Column('C_Name')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cSelect_1_2, vOut);
+
+  vOut := SQL.Select
+    .Column(SQL.&Case.&When(1).&Then(2).&When(2).&Then(3).&Else(SQL.Aggregate.Sum('C_Value')).&End)
+    .Column('C_Name')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cSelect_1_3, vOut);
+
+  vOut := SQL.Select
+    .Column(SQL.&Case.&When(1).&Then(2).&When(2).&Then(3).&Else(SQL.Aggregate.Sum(SQL.Coalesce('C_Value', 0))).&End)
+    .Column('C_Name')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cSelect_1_4, vOut);
+
+  vOut := SQL.Select
+    .Column(SQL.&Case.&When(1).&Then(2).&When(2).&Then(3).&Else(SQL.Coalesce(SQL.Aggregate.Sum('C_Value'), 0)).&End)
+    .Column('C_Name')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cSelect_1_5, vOut);
+
+  vOut := SQL.Select
+    .Column(SQL.Coalesce(SQL.Aggregate.Sum(SQL.&Case.&When(1).&Then(2).&When(2).&Then(3).&Else(4).&End), 0).Alias('C_Sum'))
+    .Column('C_Name')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cSelect_1_6, vOut);
+
+  vOut := SQL.Select
+    .Column(SQL.Coalesce(SQL.&Case.&When(1).&Then(2).&When(2).&Then(3).&Else(4).&End, 0).Alias('C_Sum'))
+    .Column('C_Name')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cSelect_1_7, vOut);
 
   vOut := SQL.Select
     .Column(SQL.&Case('C_Code').&When(1).&Then(2).&When(2).&Then(3).&Else(4).Alias('Code'))
