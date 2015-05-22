@@ -345,6 +345,7 @@ type
     function Column(const pColumn: ISQLCoalesce): ISQLSelect; overload;
     function Column(const pColumn: ISQLAggregate): ISQLSelect; overload;
     function Column(const pColumn: ISQLCase): ISQLSelect; overload;
+    function Alias(const pAlias: string): ISQLSelect;
 
     function SubSelect(pSelect: ISQLSelect; const pAlias: string): ISQLSelect; overload;
     function SubSelect(pWhere: ISQLWhere; const pAlias: string): ISQLSelect; overload;
@@ -872,6 +873,7 @@ type
     function Column(const pColumn: ISQLCoalesce): ISQLSelect; overload;
     function Column(const pColumn: ISQLAggregate): ISQLSelect; overload;
     function Column(const pColumn: ISQLCase): ISQLSelect; overload;
+    function Alias(const pAlias: string): ISQLSelect;
 
     function SubSelect(pSelect: ISQLSelect; const pAlias: string): ISQLSelect; overload;
     function SubSelect(pWhere: ISQLWhere; const pAlias: string): ISQLSelect; overload;
@@ -2515,6 +2517,19 @@ begin
   FOrderBy := TSQLOrderBy.Create(Self.ToString);
   FWhere := TSQLWhere.Create(Self.ToString);
   FUnions := TList<ISQLUnion>.Create;
+end;
+
+function TSQLSelect.Alias(const pAlias: string): ISQLSelect;
+var
+  vColumn: string;
+begin
+  if not pAlias.IsEmpty then
+  begin
+    vColumn := FColumns[FColumns.Count - 1];
+    if not ContainsText(vColumn, 'As') then
+      FColumns[FColumns.Count - 1] := vColumn + ' As ' + pAlias;
+  end;
+  Result := Self;
 end;
 
 function TSQLSelect.AllColumns: ISQLSelect;
