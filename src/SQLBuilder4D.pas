@@ -154,6 +154,7 @@ type
 
     function &End(): ISQLCase;
 
+    function &As(const pAlias: string): ISQLCase;
     function Alias(const pAlias: string): ISQLCase;
   end;
 
@@ -321,6 +322,7 @@ type
     function Condition(const pOp: TSQLOperator; pValue: ISQLValue): ISQLAggregate; overload;
     function Condition(const pOp: TSQLOperator): ISQLAggregate; overload;
 
+    function &As(const pAlias: string): ISQLAggregate;
     function Alias(const pAlias: string): ISQLAggregate;
   end;
 
@@ -333,6 +335,7 @@ type
     function Value(const pValue: TValue): ISQLCoalesce; overload;
     function Value(pValue: ISQLValue): ISQLCoalesce; overload;
 
+    function &As(const pAlias: string): ISQLCoalesce;
     function Alias(const pAlias: string): ISQLCoalesce;
   end;
 
@@ -345,6 +348,7 @@ type
     function Column(const pColumn: ISQLCoalesce): ISQLSelect; overload;
     function Column(const pColumn: ISQLAggregate): ISQLSelect; overload;
     function Column(const pColumn: ISQLCase): ISQLSelect; overload;
+    function &As(const pAlias: string): ISQLSelect;
     function Alias(const pAlias: string): ISQLSelect;
 
     function SubSelect(pSelect: ISQLSelect; const pAlias: string): ISQLSelect; overload;
@@ -873,6 +877,7 @@ type
     function Column(const pColumn: ISQLCoalesce): ISQLSelect; overload;
     function Column(const pColumn: ISQLAggregate): ISQLSelect; overload;
     function Column(const pColumn: ISQLCase): ISQLSelect; overload;
+    function &As(const pAlias: string): ISQLSelect;
     function Alias(const pAlias: string): ISQLSelect;
 
     function SubSelect(pSelect: ISQLSelect; const pAlias: string): ISQLSelect; overload;
@@ -1002,6 +1007,7 @@ type
     function Value(const pValue: TValue): ISQLCoalesce; overload;
     function Value(pValue: ISQLValue): ISQLCoalesce; overload;
 
+    function &As(const pAlias: string): ISQLCoalesce;
     function Alias(const pAlias: string): ISQLCoalesce;
   end;
 
@@ -1051,6 +1057,7 @@ type
     function Condition(const pOp: TSQLOperator; pValue: ISQLValue): ISQLAggregate; overload;
     function Condition(const pOp: TSQLOperator): ISQLAggregate; overload;
 
+    function &As(const pAlias: string): ISQLAggregate;
     function Alias(const pAlias: string): ISQLAggregate;
   end;
 
@@ -1099,6 +1106,7 @@ type
 
     function &End(): ISQLCase;
 
+    function &As(const pAlias: string): ISQLCase;
     function Alias(const pAlias: string): ISQLCase;
   end;
 
@@ -2502,6 +2510,11 @@ end;
 
 { TSQLSelect }
 
+function TSQLSelect.&As(const pAlias: string): ISQLSelect;
+begin
+  Result := Alias(pAlias);
+end;
+
 procedure TSQLSelect.AfterConstruction;
 begin
   inherited AfterConstruction;
@@ -3128,6 +3141,11 @@ end;
 
 { TSQLCoalesce }
 
+function TSQLCoalesce.&As(const pAlias: string): ISQLCoalesce;
+begin
+  Result := Alias(pAlias);
+end;
+
 function TSQLCoalesce.Alias(const pAlias: string): ISQLCoalesce;
 begin
   FAlias := pAlias;
@@ -3176,6 +3194,11 @@ begin
 end;
 
 { TSQLAggregate }
+
+function TSQLAggregate.&As(const pAlias: string): ISQLAggregate;
+begin
+  Result := Alias(pAlias);
+end;
 
 function TSQLAggregate.Alias(const pAlias: string): ISQLAggregate;
 begin
@@ -3413,6 +3436,11 @@ end;
 function TSQLCase.&Then(pValue: ISQLCoalesce): ISQLCase;
 begin
   Result := &Then(TSQLValue.Create(pValue.ToString()).Expression);
+end;
+
+function TSQLCase.&As(const pAlias: string): ISQLCase;
+begin
+  Result := Alias(pAlias);
 end;
 
 function TSQLCase.Alias(const pAlias: string): ISQLCase;

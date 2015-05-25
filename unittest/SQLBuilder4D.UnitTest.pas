@@ -26,6 +26,7 @@ type
     procedure TestSQLSelectAggregate();
     procedure TestSQLSelectColumnCase();
     procedure TestSQLSelectHaving();
+    procedure TestSQLSelectColumnAlias();
 
     procedure TestSQLInsert();
     procedure TestSQLUpdate();
@@ -514,6 +515,14 @@ begin
   CheckEqualsString(cSelect_2, vOut);
 
   vOut := SQL.Select
+    .Column(SQL.Aggregate(aggSum, 'C_Code * 1').&As('CodeM'))
+    .Column('C_Name')
+    .Column('C_Doc')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cSelect_2, vOut);
+
+  vOut := SQL.Select
     .Column(SQL.Aggregate.Sum('C_Code * 1').Alias('CodeM'))
     .Column('C_Name')
     .Column('C_Doc')
@@ -552,6 +561,32 @@ begin
     .From('Customers')
     .ToString;
   CheckEqualsString(cSelect_4, vOut);
+end;
+
+procedure TTestSQLBuilder4D.TestSQLSelectColumnAlias;
+const
+  cExpected =
+    'Select ' + sLineBreak +
+    ' C_Code As Code, C_Name As Name, C_Doc As Doc' + sLineBreak +
+    ' From Customers';
+var
+  vOut: string;
+begin
+  vOut := SQL.Select
+    .Column('C_Code').Alias('Code')
+    .Column('C_Name').Alias('Name')
+    .Column('C_Doc').Alias('Doc')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cExpected, vOut);
+
+  vOut := SQL.Select
+    .Column('C_Code').&As('Code')
+    .Column('C_Name').&As('Name')
+    .Column('C_Doc').&As('Doc')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cExpected, vOut);
 end;
 
 procedure TTestSQLBuilder4D.TestSQLSelectColumnCase;
@@ -663,6 +698,13 @@ begin
 
   vOut := SQL.Select
     .Column(SQL.Aggregate.Sum(SQL.&Case.&When(1).&Then(2).&When(2).&Then(3).&Else(4).&End).Alias('C_Sum'))
+    .Column('C_Name')
+    .From('Customers')
+    .ToString;
+  CheckEqualsString(cSelect_1_1, vOut);
+
+  vOut := SQL.Select
+    .Column(SQL.Aggregate.Sum(SQL.&Case.&When(1).&Then(2).&When(2).&Then(3).&Else(4).&End).&As('C_Sum'))
     .Column('C_Name')
     .From('Customers')
     .ToString;
