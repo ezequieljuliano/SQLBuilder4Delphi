@@ -10,6 +10,17 @@ uses
 type
 
   TGaSQLParserFactory = class sealed
+  strict private
+  const
+    CanNotBeInstantiatedException = 'This class can not be instantiated!';
+  strict private
+
+    {$HINTS OFF}
+
+    constructor Create;
+
+    {$HINTS ON}
+
   public
     class function Select(): ISQLParserSelect; overload; static;
     class function Select(const pSQLCommand: string): ISQLParserSelect; overload; static;
@@ -269,6 +280,11 @@ end;
 class function TGaSQLParserFactory.Select: ISQLParserSelect;
 begin
   Result := TGaSQLParserFactory.Select(EmptyStr);
+end;
+
+constructor TGaSQLParserFactory.Create;
+begin
+  raise ESQLParserException.Create(CanNotBeInstantiatedException);
 end;
 
 class function TGaSQLParserFactory.Select(const pSQLCommand: string): ISQLParserSelect;

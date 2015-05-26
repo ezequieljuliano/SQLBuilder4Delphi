@@ -435,6 +435,17 @@ type
   end;
 
   SQL = class sealed
+  strict private
+  const
+    CanNotBeInstantiatedException = 'This class can not be instantiated!';
+  strict private
+
+    {$HINTS OFF}
+
+    constructor Create;
+
+    {$HINTS ON}
+
   public
     class function Select(): ISQLSelect; static;
     class function Insert(): ISQLInsert; static;
@@ -3589,6 +3600,11 @@ begin
   Result := SQL.Coalesce();
   Result.Expression(pExpression);
   Result.Value(pValue);
+end;
+
+constructor SQL.Create;
+begin
+  raise ESQLBuilderException.Create(CanNotBeInstantiatedException);
 end;
 
 class function SQL.&Case: ISQLCase;
