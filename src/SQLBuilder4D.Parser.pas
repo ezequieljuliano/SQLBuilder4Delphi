@@ -3,7 +3,7 @@ unit SQLBuilder4D.Parser;
 interface
 
 uses
-  System.SysUtils;
+  SysUtils;
 
 type
 

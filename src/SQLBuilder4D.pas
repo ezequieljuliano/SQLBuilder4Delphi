@@ -3,12 +3,12 @@ unit SQLBuilder4D;
 interface
 
 uses
-  System.Classes,
-  System.SysUtils,
-  System.Generics.Collections,
-  System.StrUtils,
-  System.Rtti,
-  System.TypInfo;
+  Classes,
+  SysUtils,
+  Generics.Collections,
+  StrUtils,
+  Rtti,
+  TypInfo;
 
 type
 
@@ -1241,17 +1241,35 @@ function TSQLValue.ConvertDate(const pDate: TDate): string;
 var
   vFmt: TFormatSettings;
 begin
-  vFmt := TFormatSettings.Create();
+{$IFDEF VER210}
   vFmt.DateSeparator := '.';
   vFmt.ShortDateFormat := 'dd.mm.yyyy';
   vFmt.LongDateFormat := 'dd.mm.yyyy';
   Result := QuotedStr(DateToStr(pDate, vFmt));
+{$ELSE}
+  vFmt := TFormatSettings.Create;
+  vFmt.DateSeparator := '.';
+  vFmt.ShortDateFormat := 'dd.mm.yyyy';
+  vFmt.LongDateFormat := 'dd.mm.yyyy';
+  Result := QuotedStr(DateToStr(pDate, vFmt));
+{$ENDIF}
 end;
 
 function TSQLValue.ConvertDateTime(const pDateTime: TDateTime): string;
 var
   vFmt: TFormatSettings;
 begin
+{$IFDEF VER210}
+  vFmt.DateSeparator := '.';
+  vFmt.ShortDateFormat := 'dd.mm.yyyy hh:mm:ss';
+  vFmt.LongDateFormat := 'dd.mm.yyyy hh:mm:ss';
+  vFmt.TimeSeparator := ':';
+  vFmt.TimeAMString := 'AM';
+  vFmt.TimePMString := 'PM';
+  vFmt.ShortTimeFormat := 'hh:mm:ss';
+  vFmt.LongTimeFormat := 'hh:mm:ss';
+  Result := QuotedStr(DateToStr(pDateTime, vFmt));
+{$ELSE}
   vFmt := TFormatSettings.Create();
   vFmt.DateSeparator := '.';
   vFmt.ShortDateFormat := 'dd.mm.yyyy hh:mm:ss';
@@ -1262,12 +1280,23 @@ begin
   vFmt.ShortTimeFormat := 'hh:mm:ss';
   vFmt.LongTimeFormat := 'hh:mm:ss';
   Result := QuotedStr(DateToStr(pDateTime, vFmt));
+{$ENDIF}
 end;
 
 function TSQLValue.ConvertTime(const pTime: TTime): string;
 var
   vFmt: TFormatSettings;
 begin
+{$IFDEF VER210}
+  vFmt.ShortDateFormat := 'hh:mm:ss';
+  vFmt.LongDateFormat := 'hh:mm:ss';
+  vFmt.TimeSeparator := ':';
+  vFmt.TimeAMString := 'AM';
+  vFmt.TimePMString := 'PM';
+  vFmt.ShortTimeFormat := 'hh:mm:ss';
+  vFmt.LongTimeFormat := 'hh:mm:ss';
+  Result := QuotedStr(DateToStr(pTime, vFmt));
+{$ELSE}
   vFmt := TFormatSettings.Create();
   vFmt.ShortDateFormat := 'hh:mm:ss';
   vFmt.LongDateFormat := 'hh:mm:ss';
@@ -1277,6 +1306,7 @@ begin
   vFmt.ShortTimeFormat := 'hh:mm:ss';
   vFmt.LongTimeFormat := 'hh:mm:ss';
   Result := QuotedStr(DateToStr(pTime, vFmt));
+{$ENDIF}
 end;
 
 constructor TSQLValue.Create(const pValue: TValue);
@@ -1318,8 +1348,13 @@ begin
 
   Result := FValue.ToString;
 
+  {$IFDEF VER210}
+  if (Result = '') and (not IsExpression) then
+    Exit('Null');
+  {$ELSE}
   if (Result.IsEmpty) and (not IsExpression) then
     Exit('Null');
+  {$ENDIF}
 
   if IsReserverdWord(Result) then
     raise ESQLBuilderException.Create('Value informed for the SQL Builder is invalid!');
@@ -1552,8 +1587,13 @@ constructor TSQLJoin.Create(pTable: ISQLTable; const pType: TSQLJoinType; const 
 begin
   FConditions := TStringList.Create;
 
+{$IFDEF VER210}
+  if not (pDefaultCondition = '') then
+    FConditions.Add(pDefaultCondition);
+{$ELSE}
   if not pDefaultCondition.IsEmpty then
     FConditions.Add(pDefaultCondition);
+{$ENDIF}
 
   FType := pType;
   FTable := pTable;
@@ -1601,8 +1641,13 @@ var
 begin
   Result := EmptyStr;
 
+{$IFDEF VER210}
+  if (FTable = nil) or (FTable.Name = '') or (FConditions.Count = 0) then
+    Exit();
+{$ELSE}
   if (FTable = nil) or (FTable.Name.IsEmpty) or (FConditions.Count = 0) then
     Exit();
+{$ENDIF}
 
   case FType of
     jtInner:
@@ -2067,8 +2112,13 @@ var
   vInsensetive: Boolean;
   vStrIn: string;
 begin
+{$IFDEF VER210}
+  if FColumn = '' then
+    raise ESQLBuilderException.Create('Column can not be empty!');
+{$ELSE}
   if FColumn.IsEmpty then
     raise ESQLBuilderException.Create('Column can not be empty!');
+{$ENDIF}
 
   vInsensetive := False;
 
@@ -2106,8 +2156,13 @@ procedure TSQLWhere.AddExpression(const pSQLOp: TSQLOperator; pSQLValue: ISQLVal
 var
   vValue: string;
 begin
+{$IFDEF VER210}
+  if FColumn = '' then
+    raise ESQLBuilderException.Create('Column can not be empty!');
+{$ELSE}
   if FColumn.IsEmpty then
     raise ESQLBuilderException.Create('Column can not be empty!');
+{$ENDIF}
 
   if pSQLValue.IsInsensetive then
     Criterias.Add(
@@ -2116,8 +2171,13 @@ begin
   else
   begin
     vValue := pSQLValue.ToString;
+{$IFDEF VER210}
+    if not (vValue = '') then
+      vValue := ' ' + vValue;
+{$ELSE}
     if not vValue.IsEmpty then
       vValue := ' ' + vValue;
+{$ENDIF}
     Criterias.Add(
       TSQLCriteria.Create('(' + FColumn + ' ' + SQL_OPERATOR[pSQLOp] + vValue + ')', FConnector)
       );
@@ -2166,8 +2226,13 @@ end;
 
 function TSQLWhere.Between(pStart, pEnd: ISQLValue): ISQLWhere;
 begin
+{$IFDEF VER210}
+  if FColumn = '' then
+    raise ESQLBuilderException.Create('Column can not be empty!');
+{$ELSE}
   if FColumn.IsEmpty then
     raise ESQLBuilderException.Create('Column can not be empty!');
+{$ENDIF}
 
   Criterias.Add(
     TSQLCriteria.Create('(' + FColumn + ' Between ' + pStart.ToString +
@@ -2547,7 +2612,11 @@ function TSQLSelect.Alias(const pAlias: string): ISQLSelect;
 var
   vColumn: string;
 begin
+{$IFDEF VER210}
+  if not (pAlias = '') then
+{$ELSE}
   if not pAlias.IsEmpty then
+{$ENDIF}
   begin
     vColumn := FColumns[FColumns.Count - 1];
     if not ContainsText(vColumn, 'As') then
@@ -2600,7 +2669,11 @@ var
 begin
   Result := EmptyStr;
 
+{$IFDEF VER210}
+  if (FColumns.Count = 0) or (FFrom = nil) or (FFrom.Table.Name = '') then
+{$ELSE}
   if (FColumns.Count = 0) or (FFrom = nil) or (FFrom.Table.Name.IsEmpty) then
+{$ENDIF}
     Exit;
 
   vSb := TStringBuilder.Create;
@@ -2854,7 +2927,11 @@ var
 begin
   Result := EmptyStr;
 
+{$IFDEF VER210}
+  if (FTable = nil) or (FTable.Name = '') then
+{$ELSE}
   if (FTable = nil) or (FTable.Name.IsEmpty) then
+{$ENDIF}
     Exit;
 
   vSb := TStringBuilder.Create;
@@ -2920,7 +2997,11 @@ begin
   FColumns.Clear;
   for I := Low(pColumns) to High(pColumns) do
   begin
+{$IFDEF VER210}
+    if pColumns[I] = '' then
+{$ELSE}
     if pColumns[I].IsEmpty then
+{$ENDIF}
       raise Exception.Create('The column can not be empty!');
     FColumns.Add(pColumns[I]);
   end;
@@ -2929,7 +3010,11 @@ end;
 
 function TSQLUpdate.ColumnSetValue(const pColumn: string; pValue: ISQLValue): ISQLUpdate;
 begin
+{$IFDEF VER210}
+  if pColumn = '' then
+{$ELSE}
   if pColumn.IsEmpty then
+{$ENDIF}
     raise Exception.Create('The column can not be empty!');
   FColumns.Add(pColumn);
   FValues.Add(pValue);
@@ -2951,7 +3036,11 @@ begin
   if (FColumns.Count <> FValues.Count) then
     raise ESQLBuilderException.Create('Columns count and Values count must be equal!');
 
+{$IFDEF VER210}
+  if (FTable = nil) or (FTable.Name = '') then
+{$ELSE}
   if (FTable = nil) or (FTable.Name.IsEmpty) then
+{$ENDIF}
     Exit;
 
   vSb := TStringBuilder.Create;
@@ -3046,7 +3135,11 @@ begin
   FColumns.Clear;
   for I := low(pColumns) to high(pColumns) do
   begin
+{$IFDEF VER210}
+    if pColumns[I] = '' then
+{$ELSE}
     if pColumns[I].IsEmpty then
+{$ENDIF}
       raise Exception.Create('The column can not be empty!');
     FColumns.Add(pColumns[I]);
   end;
@@ -3055,7 +3148,11 @@ end;
 
 function TSQLInsert.ColumnValue(const pColumn: string; pValue: ISQLValue): ISQLInsert;
 begin
+{$IFDEF VER210}
+  if pColumn = '' then
+{$ELSE}
   if pColumn.IsEmpty then
+{$ENDIF}
     raise Exception.Create('The column can not be empty!');
   FColumns.Add(pColumn);
   FValues.Add(pValue);
@@ -3077,7 +3174,11 @@ begin
   if (FColumns.Count <> FValues.Count) then
     raise ESQLBuilderException.Create('Columns count and Values count must be equal!');
 
+{$IFDEF VER210}
+  if (FTable = nil) or (FTable.Name = '') then
+{$ELSE}
   if (FTable = nil) or (FTable.Name.IsEmpty) then
+{$ENDIF}
     Exit;
 
   vSb := TStringBuilder.Create;
@@ -3173,7 +3274,11 @@ end;
 function TSQLCoalesce.DoToString: string;
 begin
   Result := 'Coalesce(' + FTerm + ',' + FValue.ToString() + ')';
+{$IFDEF VER210}
+  if not (FAlias = '') then
+{$ELSE}
   if not FAlias.IsEmpty then
+{$ENDIF}
     Result := Result + ' As ' + FAlias;
 end;
 
@@ -3294,12 +3399,20 @@ begin
   if FIsCondition then
   begin
     vValue := FValue.ToString();
+{$IFDEF VER210}
+    if not (vValue = '') then
+{$ELSE}
     if not vValue.IsEmpty then
+{$ENDIF}
       vValue := ' ' + vValue;
     Result := Result + ' ' + SQL_OPERATOR[FOp] + vValue;
   end;
 
+{$IFDEF VER210}
+  if not (FAlias = '') then
+{$ELSE}
   if not FAlias.IsEmpty then
+{$ENDIF}
     Result := Result + ' As ' + FAlias;
 end;
 
@@ -3484,7 +3597,11 @@ begin
   Result := EmptyStr;
 
   vExp := EmptyStr;
+{$IFDEF VER210}
+  if (FExpression <> nil) and (not (FExpression.ToString = '')) then
+{$ELSE}
   if (FExpression <> nil) and (not FExpression.ToString.IsEmpty) then
+{$ENDIF}
     vExp := FExpression.ToString();
 
   vSb := TStringBuilder.Create;
@@ -3499,7 +3616,11 @@ begin
 
     vSb.Append(' End');
 
+{$IFDEF VER210}
+    if not (FAlias = '') then
+{$ELSE}
     if not FAlias.IsEmpty then
+{$ENDIF}
       vSb.Append(' As ' + FAlias);
 
     Result := vSb.ToString;
