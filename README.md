@@ -9,7 +9,7 @@ SQLBuilder4Delphi applies the concept: DSL. This acronym stands for Domain Speci
 
 The code of SQLBuilder4Delphi is intentionally clean and simple. Rather than provide support for every thing you could ever do with SQL, it provides support for the most common situations and allows you to easily modify the source to suit your needs.
 
-The SQLBuilder4Delphi provides libraries useful auxiliary for developing any Delphi application and requires Delphi XE or greater.
+The SQLBuilder4Delphi provides libraries useful auxiliary for developing any Delphi application and requires Delphi 2010 or greater.
 
 Features
 ========
