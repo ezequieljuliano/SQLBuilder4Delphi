@@ -115,7 +115,7 @@ implementation
 {$endif}
 
 uses
-  SysUtils{$ifdef MSWINDOWS}, Windows{$endif}, gaSQLParserConsts;
+  SysUtils{$ifdef MSWINDOWS}, {$IFDEF VER210} Windows {$ELSE} Winapi.Windows {$ENDIF} {$endif}, gaSQLParserConsts;
 
 function IsKatakana(const Chr: Byte): Boolean;
 begin
