@@ -222,6 +222,8 @@ begin
         FToken := ScanComment(ctLineEnd)
       else if IsStartQuote(FCurrentPos^) then
         FToken := ScanQuotedtSymbol
+      else if (FCurrentPos^ = '#') or (FCurrentPos^ = '##') then ////SQLServer Temp Table name - ONEIDE - 29/08/2016
+        FToken:= ScanSymbol
       else
         FToken := ScanOther;
   end;
@@ -344,14 +346,20 @@ begin
   else begin
     while TRUE do
     begin
-      if (FCurrentPos^ in ['A'..'Z', 'a'..'z', '0'..'9', '_', '"', '$']) or
-         IsKatakana(Byte(FCurrentPos^)) then
-        Inc(FCurrentPos)
+      //SQLServer Temp Table name - ONEIDE - 29/08/2016
+      if (FCurrentPos^ = '#') or (FCurrentPos^ = '##') then
+      begin
+        Inc(FCurrentPos);
+      end
       else
-        if FCurrentPos^ in LeadBytes then
-          Inc(FCurrentPos, 2)
+        if (FCurrentPos^ in ['A'..'Z', 'a'..'z', '0'..'9', '_', '"', '$']) or
+           IsKatakana(Byte(FCurrentPos^)) then
+          Inc(FCurrentPos)
         else
-          Break;
+          if FCurrentPos^ in LeadBytes then
+            Inc(FCurrentPos, 2)
+          else
+            Break;
     end;
   end;
   Result := stSymbol;
